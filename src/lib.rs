@@ -22,6 +22,7 @@ pub trait Arena: Debug + Default {
     type Generation: Copy + Eq + Hash + Fixed;
     type Generations: Default + Debug;
     type Dead: Default + Debug;
+    type NextIndex: Default + Debug;
 }
 
 #[macro_export]
@@ -30,8 +31,9 @@ macro_rules! fixed_arena {
         impl Arena for $arena {
             type Index = $index;
             type Generation = ();
-            type Generations = Self::Index;
+            type Generations = ();
             type Dead = ();
+            type NextIndex = Self::Index;
         }
     }
 }
@@ -44,6 +46,7 @@ macro_rules! dynamic_arena {
             type Generation = $gen;
             type Generations = Vec<Self::Generation>;
             type Dead = Vec<Self::Index>;
+            type NextIndex = ();
         }
     }
 }

@@ -9,6 +9,7 @@ pub trait Create<'a, A: Arena, G: Fixed, ID> {
 pub struct Allocator<A: Arena> {
     gen: <A as Arena>::Generations,
     dead: <A as Arena>::Dead,
+    next_index: <A as Arena>::NextIndex,
 }
 
 impl<A: Arena> Default for Allocator<A> {
@@ -16,6 +17,7 @@ impl<A: Arena> Default for Allocator<A> {
         Self {
             gen: A::Generations::default(),
             dead: A::Dead::default(),
+            next_index: A::NextIndex::default(),
         }
     }
 }
@@ -36,11 +38,11 @@ where
     }
 }
 
-impl<I: Index + Default, A: Arena<Index=I, Generation=(), Generations=I>> Create<'_, A, (), Id<A>> for Allocator<A>
+impl<I: Index + Default, A: Arena<Index=I, Generation=(), NextIndex=I>> Create<'_, A, (), Id<A>> for Allocator<A>
 {
     fn create(&mut self) -> Id<A> {
-        let index = self.gen;
-        self.gen.increment();
+        let index = self.next_index;
+        self.next_index.increment();
         Id {
             index,
             gen: ()
