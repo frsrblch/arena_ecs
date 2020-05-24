@@ -19,10 +19,10 @@ mod map;
 
 pub trait Arena: Debug + Default {
     type Index: Index;
+    type NextIndex: Default + Debug;
     type Generation: Copy + Eq + Hash + Fixed;
     type Generations: Default + Debug;
     type Dead: Default + Debug;
-    type NextIndex: Default + Debug;
 }
 
 #[macro_export]
@@ -30,10 +30,10 @@ macro_rules! fixed_arena {
     ($arena:ty, $index:ty) => {
         impl Arena for $arena {
             type Index = $index;
+            type NextIndex = Self::Index;
             type Generation = ();
             type Generations = ();
             type Dead = ();
-            type NextIndex = Self::Index;
         }
     }
 }
@@ -43,10 +43,10 @@ macro_rules! dynamic_arena {
     ($arena:ty, $index:ty, $gen:ty) => {
         impl Arena for $arena {
             type Index = $index;
+            type NextIndex = ();
             type Generation = $gen;
             type Generations = Vec<Self::Generation>;
             type Dead = Vec<Self::Index>;
-            type NextIndex = ();
         }
     }
 }
