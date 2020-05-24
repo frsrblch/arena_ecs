@@ -23,7 +23,7 @@ impl<A: Arena> Default for Allocator<A> {
 impl<'a, I, G, A> Create<'a, A, G, Valid<'a, A>> for Allocator<A>
 where
     I: Index,
-    G: Generation,
+    G: Dynamic,
     A: Arena<Index=I, Generation=G, Generations=Vec<G>, Dead=Vec<I>>,
 {
     fn create(&mut self) -> Valid<'a, A> {
@@ -48,7 +48,7 @@ impl<I: Index + Default, A: Arena<Index=I, Generation=(), Generations=I>> Create
     }
 }
 
-impl<I: Index, G: Generation + Fixed, A: Arena<Index=I, Generation=G, Generations=Vec<G>, Dead=Vec<I>>> Allocator<A>
+impl<I: Index, G: Dynamic + Fixed, A: Arena<Index=I, Generation=G, Generations=Vec<G>, Dead=Vec<I>>> Allocator<A>
 where
 {
     fn reuse_index(&mut self, index: A::Index) -> Id<A> {
@@ -130,7 +130,7 @@ mod test {
     #[derive(Debug, Default)]
     struct GenerationalArena;
 
-    generational_arena!(GenerationalArena, u8, NonZeroU8);
+    dynamic_arena!(GenerationalArena, u8, NonZeroU8);
 
     #[test]
     #[should_panic]

@@ -1,60 +1,25 @@
 use crate::*;
 
 pub trait Fixed: Sized + Debug + Copy + Eq + Hash {
-    type Vec: Clone + Debug + Default;
     fn first() -> Self;
 }
 
-pub trait Generation: Fixed {
+pub trait Dynamic: Fixed {
     fn next_gen(self) -> Self;
 }
 
-// pub trait VecType: Debug + Default + Clone {
-//     type Item;
-//     fn pop(&mut self) -> Option<Self::Item>;
-//     fn push(&mut self, item: Self::Item);
-//     fn len(&self) -> usize;
-//     fn get(&self, index: usize) -> Option<&Self::Item>;
-//     fn get_mut(&mut self, index: usize) -> Option<&mut Self::Item>;
-// }
-
-// impl<T: Debug + Clone> VecType for Vec<T> {
-//     type Item = T;
-//
-//     fn pop(&mut self) -> Option<Self::Item> {
-//         self.pop()
-//     }
-//
-//     fn push(&mut self, item: Self::Item) {
-//         Vec::push(self, item);
-//     }
-//
-//     fn len(&self) -> usize {
-//         self.len()
-//     }
-//
-//     fn get(&self, index: usize) -> Option<&Self::Item> {
-//         self.as_slice().get(index)
-//     }
-//
-//     fn get_mut(&mut self, index: usize) -> Option<&mut Self::Item> {
-//         self.as_mut_slice().get_mut(index)
-//     }
-// }
-
-macro_rules! generation {
+macro_rules! dynamic {
 ($u:ty) => {
     item!{
         pub use std::num:: [<NonZero $u:upper>];
 
         impl Fixed for [<NonZero $u:upper>] {
-            type Vec = Vec<Self>;
             fn first() -> Self {
                 [<NonZero $u:upper>]::new(1).unwrap()
             }
         }
 
-        impl Generation for [<NonZero $u:upper>] {
+        impl Dynamic for [<NonZero $u:upper>] {
             fn next_gen(self) -> Self {
                 let value = self.get();
                 if value == $u::MAX {
@@ -78,40 +43,13 @@ macro_rules! generation {
 }
 }
 
-generation!(u8);
-generation!(u16);
-generation!(u32);
-generation!(u64);
+dynamic!(u8);
+dynamic!(u16);
+dynamic!(u32);
+dynamic!(u64);
 
 impl Fixed for () {
-    type Vec = usize;
-
     fn first() -> Self {
         ()
     }
 }
-
-// impl VecType for usize {
-//     type Item = ();
-//
-//     fn pop(&mut self) -> Option<Self::Item> {
-//         *self -= 1;
-//         None
-//     }
-//
-//     fn push(&mut self, _item: Self::Item) {
-//         *self += 1;
-//     }
-//
-//     fn len(&self) -> usize {
-//         *self
-//     }
-//
-//     fn get(&self, _index: usize) -> Option<&Self::Item> {
-//         None
-//     }
-//
-//     fn get_mut(&mut self, _index: usize) -> Option<&mut Self::Item> {
-//         None
-//     }
-// }

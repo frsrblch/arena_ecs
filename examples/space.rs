@@ -212,7 +212,7 @@ pub struct Colony {
     pub food: Component<Self, f64>,
 }
 
-generational_arena!(Colony, u16, NonZeroU16);
+dynamic_arena!(Colony, u16, NonZeroU16);
 
 impl Colony {
     pub fn create(&mut self, allocator: &mut Allocator<Self>, colony: ColonyRow, body: Id<Body>) -> Id<Self> {

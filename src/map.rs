@@ -31,7 +31,7 @@ impl<A: Arena<Generation=()>, T> GetOpt<&Id<A>, T> for IdMap<A, T> {
     }
 }
 
-impl<A: Arena<Generation=G>, G: Generation, T> GetOpt<Valid<'_, A>, T> for IdMap<A, T> {
+impl<A: Arena<Generation=G>, G: Dynamic, T> GetOpt<Valid<'_, A>, T> for IdMap<A, T> {
     fn get(&self, id: Valid<A>) -> Option<&T> {
         self.values.get(&id.id)
     }
@@ -41,7 +41,7 @@ impl<A: Arena<Generation=G>, G: Generation, T> GetOpt<Valid<'_, A>, T> for IdMap
     }
 }
 
-impl<A: Arena<Generation=G>, G: Generation, T> GetOpt<&Valid<'_, A>, T> for IdMap<A, T> {
+impl<A: Arena<Generation=G>, G: Dynamic, T> GetOpt<&Valid<'_, A>, T> for IdMap<A, T> {
     fn get(&self, id: &Valid<A>) -> Option<&T> {
         self.values.get(&id.id)
     }

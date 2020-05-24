@@ -37,7 +37,7 @@ macro_rules! fixed_arena {
 }
 
 #[macro_export]
-macro_rules! generational_arena {
+macro_rules! dynamic_arena {
     ($arena:ty, $index:ty, $gen:ty) => {
         impl Arena for $arena {
             type Index = $index;
