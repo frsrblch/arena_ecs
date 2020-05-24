@@ -1,0 +1,15 @@
+[package]
+name = "ecs_traits"
+version = "0.1.0"
+authors = ["Fraser Balch <farseer.ulwithy@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+paste = "*"
+fnv = "1.0.7"
+
+
+[[example]]
+name = "space"
