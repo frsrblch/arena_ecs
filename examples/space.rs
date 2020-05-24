@@ -210,16 +210,17 @@ pub struct Colony {
     pub name: Component<Self, String>,
     pub population: Component<Self, f64>,
     pub food: Component<Self, f64>,
+    pub government: Component<Self, Id<Government>>,
 }
 
 dynamic_arena!(Colony, u16, NonZeroU16);
 
 impl Colony {
-    pub fn create(&mut self, allocator: &mut Allocator<Self>, colony: ColonyRow, body: Id<Body>) -> Id<Self> {
+    pub fn create(&mut self, allocator: &mut Allocator<Self>, colony: ColonyRow, links: ColonyLinks) -> Id<Self> {
         let id = allocator.create();
 
         self.insert(id, colony);
-        self.link(id, body);
+        self.link(id, links);
         self.defaults(id);
 
         id.id
@@ -230,12 +231,20 @@ impl Colony {
         self.population.insert(id, colony.population);
     }
 
-    fn link(&mut self, id: Valid<Self>, body: Id<Body>) {
-        self.body.insert(id, body);
+    fn link(&mut self, id: Valid<Self>, links: ColonyLinks) {
+        self.body.insert(id, links.body);
+        self.government.insert(id, links.government);
     }
 
     fn defaults(&mut self, id: Valid<Self>) {
         self.food.insert(id, Default::default());
+    }
+
+    pub fn print_with_government(&self, _govt: &Government) {
+        // TODO iterate through valid ids, or maintain some kind of Vec<Option<Id<A>>>
+        // TODO iterate through component values / zip components together
+
+
     }
 }
 
@@ -244,6 +253,19 @@ pub struct ColonyRow {
     pub name: String,
     pub population: f64,
 }
+
+#[derive(Debug, Copy, Clone)]
+pub struct ColonyLinks {
+    pub body: Id<Body>,
+    pub government: Id<Government>,
+}
+
+#[derive(Debug, Default)]
+pub struct Government {
+    pub name: Component<Self, String>,
+}
+
+dynamic_arena!(Government, u8, NonZeroU8);
 
 #[test]
 fn id_sizes() {

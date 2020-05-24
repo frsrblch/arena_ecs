@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 paste = "*"
 fnv = "1.0.7"
+bit-set = "*"
 
 
 [[example]]
