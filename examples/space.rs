@@ -74,12 +74,7 @@ pub struct System {
     pub mass: Component<Self, f64>,
 }
 
-impl Arena for System {
-    type Index = u16;
-    type Generation = ();
-    type Generations = Self::Index;
-    type Dead = ();
-}
+fixed_arena!(System, u16);
 
 impl System {
     pub fn create(&mut self, allocator: &mut Allocator<Self>, system: SystemRow) -> Id<Self> {
@@ -125,12 +120,7 @@ pub struct Body {
     pub position: Component<Self, (f64, f64)>,
 }
 
-impl Arena for Body {
-    type Index = u32;
-    type Generation = ();
-    type Generations = Self::Index;
-    type Dead = Vec<Self::Index>;
-}
+fixed_arena!(Body, u32);
 
 impl Body {
     pub fn create(&mut self, allocator: &mut Allocator<Self>, body: BodyRow, system: Id<System>) -> Id<Self> {
@@ -174,12 +164,7 @@ pub struct Surface {
     pub albedo: Component<Self, f64>,
 }
 
-impl Arena for Surface {
-    type Index = u32;
-    type Generation = ();
-    type Generations = Self::Index;
-    type Dead = ();
-}
+fixed_arena!(Surface, u32);
 
 impl Surface {
     pub fn create(&mut self, allocator: &mut Allocator<Self>, surface: SurfaceRow, links: SurfaceLinks) -> Id<Surface> {
@@ -227,12 +212,7 @@ pub struct Colony {
     pub food: Component<Self, f64>,
 }
 
-impl Arena for Colony {
-    type Index = u16;
-    type Generation = NonZeroU16;
-    type Generations = Vec<Self::Generation>;
-    type Dead = Vec<Self::Index>;
-}
+generational_arena!(Colony, u16, NonZeroU16);
 
 impl Colony {
     pub fn create(&mut self, allocator: &mut Allocator<Self>, colony: ColonyRow, body: Id<Body>) -> Id<Self> {

@@ -1,22 +1,18 @@
 use crate::*;
+use std::hash::Hasher;
+use std::marker::PhantomData;
 
 #[derive(Debug)]
-pub struct Id<A: Arena>
-{
+pub struct Id<A: Arena> {
     pub(crate) index: A::Index,
     pub(crate) gen: A::Generation,
 }
 
-impl<A: Arena> Id<A>
-where A::Generation: Fixed
-{
+impl<A: Arena> Id<A> where A::Generation: Fixed {
     pub(crate) fn index(self) -> usize {
         self.index.index()
     }
 }
-
-use std::hash::Hasher;
-use std::marker::PhantomData;
 
 impl<A: Arena> Hash for Id<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -42,6 +38,8 @@ impl<A: Arena> PartialEq for Id<A> {
     }
 }
 
+impl<A: Arena> Eq for Id<A> {}
+
 #[derive(Debug)]
 pub struct Valid<'a, A: Arena>
 where
@@ -66,31 +64,3 @@ impl<A: Arena> Clone for Valid<'_, A> where A::Generation: Generation {
 }
 
 impl<A: Arena> Copy for Valid<'_, A>  where A::Generation: Generation {}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[derive(Debug, Default)]
-    struct Body;
-
-    impl Arena for Body {
-        type Index = u32;
-        type Generation = ();
-        type Generations = Self::Index;
-        type Dead = ();
-    }
-
-    #[test]
-    fn id_test() {
-        let id = Id::<Body> { index: 0, gen: () };
-
-        assert_eq!(
-            id,
-            Id {
-                index: 0,
-                gen: ()
-            }
-        );
-    }
-}

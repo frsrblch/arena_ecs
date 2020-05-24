@@ -104,11 +104,6 @@ where
     }
 }
 
-impl<G: Fixed, A: Arena<Generation=G>> Allocator<A>
-{
-
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -130,22 +125,12 @@ mod test {
     #[derive(Debug, Default)]
     struct FixedArena;
 
-    impl Arena for FixedArena {
-        type Index = u8;
-        type Generation = ();
-        type Generations = Self::Index;
-        type Dead = ();
-    }
+    fixed_arena!(FixedArena, u8);
 
     #[derive(Debug, Default)]
     struct GenerationalArena;
 
-    impl Arena for GenerationalArena {
-        type Index = u8;
-        type Generation = NonZeroU8;
-        type Generations = Vec<Self::Generation>;
-        type Dead = Vec<Self::Index>;
-    }
+    generational_arena!(GenerationalArena, u8, NonZeroU8);
 
     #[test]
     #[should_panic]
