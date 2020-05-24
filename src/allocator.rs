@@ -1,34 +1,76 @@
 use crate::*;
 use std::any::type_name;
-use std::convert::TryFrom;
+
+pub trait Create<'a, A: Arena, G: Fixed, ID> {
+    fn create(&'a mut self) -> ID;
+}
 
 #[derive(Debug)]
 pub struct Allocator<A: Arena> {
-    gen: <A::Generation as Fixed>::Vec,
+    gen: <A as Arena>::Generations,
     dead: <A as Arena>::Dead,
 }
 
 impl<A: Arena> Default for Allocator<A> {
     fn default() -> Self {
         Self {
-            gen: <A::Generation as Fixed>::Vec::default(),
-            dead: <A as Arena>::Dead::default(),
+            gen: A::Generations::default(),
+            dead: A::Dead::default(),
         }
     }
 }
 
-impl<A: Arena> Allocator<A>
+impl<'a, I, G, A> Create<'a, A, G, Valid<'a, A>> for Allocator<A>
 where
-    A::Generation: Generation,
-    A::Dead: VecType<Item=A::Index>,
+    I: Index,
+    G: Generation,
+    A: Arena<Index=I, Generation=G, Generations=Vec<G>, Dead=Vec<I>>,
 {
-    pub fn create_or_reuse(&mut self) -> Id<A> {
-        if let Some(index) = self.dead.pop() {
-            let gen = *self.gen.get(index.index()).unwrap();
-            Id { index, gen }
+    fn create(&mut self) -> Valid<'a, A> {
+        let id = if let Some(index) = self.dead.pop() {
+            self.reuse_index(index)
         } else {
             self.create_new()
+        };
+        Valid::new(id)
+    }
+}
+
+impl<I: Index + Default, A: Arena<Index=I, Generation=(), Generations=I>> Create<'_, A, (), Id<A>> for Allocator<A>
+{
+    fn create(&mut self) -> Id<A> {
+        let index = self.gen;
+        self.gen.increment();
+        Id {
+            index,
+            gen: ()
         }
+    }
+}
+
+impl<I: Index, G: Generation + Fixed, A: Arena<Index=I, Generation=G, Generations=Vec<G>, Dead=Vec<I>>> Allocator<A>
+where
+{
+    fn reuse_index(&mut self, index: A::Index) -> Id<A> {
+        let gen = *self.gen.get(index.index()).unwrap();
+        Id { index, gen }
+    }
+
+    fn create_new(&mut self) -> Id<A> {
+        let index = A::Index::try_from(self.gen.len())
+            .ok()
+            .expect(
+                &format!(
+                    "{}: usize out of range, could not convert to {}",
+                    type_name::<Self>(),
+                    type_name::<A::Index>()
+                )
+            );
+
+        let gen = A::Generation::first();
+        self.gen.push(gen);
+
+        Id { index, gen }
     }
 
     pub fn kill(&mut self, id: Id<A>) {
@@ -52,25 +94,19 @@ where
             .map(|gen| gen.eq(&id.gen))
             .unwrap_or(false)
     }
+
+    pub fn validate(&self, id: Id<A>) -> Option<Valid<A>> {
+        if self.is_alive(id) {
+            Some(Valid::new(id))
+        } else {
+            None
+        }
+    }
 }
 
-impl<A: Arena> Allocator<A> {
-    pub fn create_new(&mut self) -> Id<A> {
-        let index = A::Index::try_from(self.gen.len())
-            .ok()
-            .expect(
-                &format!(
-                    "{}: usize out of range, could not convert to {}",
-                    type_name::<Self>(),
-                    type_name::<A::Index>()
-                )
-            );
+impl<G: Fixed, A: Arena<Generation=G>> Allocator<A>
+{
 
-        let gen = A::Generation::first();
-        self.gen.push(gen);
-
-        Id { index, gen }
-    }
 }
 
 #[cfg(test)]
@@ -81,7 +117,7 @@ mod test {
     #[test]
     fn vec_size() {
         assert_eq!(24, size_of::<Vec<()>>());
-        assert_eq!(8, size_of::<Allocator<FixedArena>>());
+        assert_eq!(1, size_of::<Allocator<FixedArena>>());
         assert_eq!(48, size_of::<Allocator<GenerationalArena>>());
     }
 
@@ -91,35 +127,24 @@ mod test {
         assert_eq!(2, size_of::<Id<GenerationalArena>>());
     }
 
-    #[test]
-    fn debugging() {
-        let mut fixed_allocator = Allocator::<FixedArena>::default();
-        let id1 = fixed_allocator.create_new();
-
-        let mut generational_allocator = Allocator::<GenerationalArena>::default();
-        let id2 = generational_allocator.create_or_reuse();
-
-        println!("fixed alloc: {:?}, id: {:?}", fixed_allocator, id1);
-        println!("gen alloc: {:?}, id: {:?}", generational_allocator, id2);
-
-        // panic!();
-    }
-
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     struct FixedArena;
 
     impl Arena for FixedArena {
         type Index = u8;
         type Generation = ();
+        type Generations = Self::Index;
         type Dead = ();
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     struct GenerationalArena;
 
     impl Arena for GenerationalArena {
         type Index = u8;
         type Generation = NonZeroU8;
+        type Generations = Vec<Self::Generation>;
+        type Dead = Vec<Self::Index>;
     }
 
     #[test]
@@ -127,7 +152,7 @@ mod test {
     fn allocator_panic_when_index_out_of_range() {
         let mut allocator = Allocator::<FixedArena>::default();
         for _ in 0..257 {
-            let _id = allocator.create_new();
+            let _id = allocator.create();
         }
     }
 
@@ -135,26 +160,56 @@ mod test {
     fn create_fixed() {
         let mut fixed_allocator = Allocator::<FixedArena>::default();
 
-        assert_eq!(Id { index: 0, gen: () }, fixed_allocator.create_new());
-        assert_eq!(Id { index: 1, gen: () }, fixed_allocator.create_new());
+        assert_eq!(Id { index: 0, gen: () }, fixed_allocator.create());
+        assert_eq!(Id { index: 1, gen: () }, fixed_allocator.create());
     }
 
     #[test]
     fn create_generational() {
         let mut gen_allocator = Allocator::<GenerationalArena>::default();
 
-        assert_eq!(Id { index: 0, gen: NonZeroU8::first() }, gen_allocator.create_new());
-        assert_eq!(Id { index: 1, gen: NonZeroU8::first() }, gen_allocator.create_new());
+        assert_eq!(Id { index: 0, gen: NonZeroU8::first() }, gen_allocator.create().id);
+        assert_eq!(Id { index: 1, gen: NonZeroU8::first() }, gen_allocator.create().id);
     }
 
     #[test]
     fn reuse_generational() {
         let mut gen_allocator = Allocator::<GenerationalArena>::default();
 
-        let id1 = gen_allocator.create_new();
+        let id1 = gen_allocator.create().id;
         gen_allocator.kill(id1);
 
-        assert_eq!(Id { index: 0, gen: NonZeroU8::first().next_gen() }, gen_allocator.create_or_reuse());
-        assert_eq!(Id { index: 1, gen: NonZeroU8::first() }, gen_allocator.create_or_reuse());
+        assert_eq!(Id { index: 0, gen: NonZeroU8::first().next_gen() }, gen_allocator.create().id);
+        assert_eq!(Id { index: 1, gen: NonZeroU8::first() }, gen_allocator.create().id);
+    }
+
+    #[test]
+    fn validate_valid_returns_some() {
+        let mut allocator = Allocator::<GenerationalArena>::default();
+
+        let id = allocator.create().id;
+
+        assert!(allocator.validate(id).is_some());
+    }
+
+    #[test]
+    fn validate_invalid_returns_none() {
+        let mut allocator = Allocator::<GenerationalArena>::default();
+
+        let id = allocator.create().id;
+        allocator.kill(id);
+
+        assert!(allocator.validate(id).is_none());
+    }
+
+    #[test]
+    fn gen_alloc_lifetime_test() {
+        let mut allocator = Allocator::<GenerationalArena>::default();
+
+        let id1 = allocator.create().id; // Remove ".id" to cause a compiler error
+        let id2 = allocator.create();
+
+        println!("{:?}", id1);
+        println!("{:?}", id2);
     }
 }

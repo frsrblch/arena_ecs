@@ -1,7 +1,7 @@
 use crate::*;
 
 pub trait Fixed: Sized + Debug + Copy + Eq + Hash {
-    type Vec: Clone + Debug + Default + VecType<Item=Self>;
+    type Vec: Clone + Debug + Default;
     fn first() -> Self;
 }
 
@@ -9,38 +9,38 @@ pub trait Generation: Fixed {
     fn next_gen(self) -> Self;
 }
 
-pub trait VecType: Debug + Default + Clone {
-    type Item;
-    fn pop(&mut self) -> Option<Self::Item>;
-    fn push(&mut self, item: Self::Item);
-    fn len(&self) -> usize;
-    fn get(&self, index: usize) -> Option<&Self::Item>;
-    fn get_mut(&mut self, index: usize) -> Option<&mut Self::Item>;
-}
+// pub trait VecType: Debug + Default + Clone {
+//     type Item;
+//     fn pop(&mut self) -> Option<Self::Item>;
+//     fn push(&mut self, item: Self::Item);
+//     fn len(&self) -> usize;
+//     fn get(&self, index: usize) -> Option<&Self::Item>;
+//     fn get_mut(&mut self, index: usize) -> Option<&mut Self::Item>;
+// }
 
-impl<T: Debug + Clone> VecType for Vec<T> {
-    type Item = T;
-
-    fn pop(&mut self) -> Option<Self::Item> {
-        self.pop()
-    }
-
-    fn push(&mut self, item: Self::Item) {
-        Vec::push(self, item);
-    }
-
-    fn len(&self) -> usize {
-        self.len()
-    }
-
-    fn get(&self, index: usize) -> Option<&Self::Item> {
-        self.as_slice().get(index)
-    }
-
-    fn get_mut(&mut self, index: usize) -> Option<&mut Self::Item> {
-        self.as_mut_slice().get_mut(index)
-    }
-}
+// impl<T: Debug + Clone> VecType for Vec<T> {
+//     type Item = T;
+//
+//     fn pop(&mut self) -> Option<Self::Item> {
+//         self.pop()
+//     }
+//
+//     fn push(&mut self, item: Self::Item) {
+//         Vec::push(self, item);
+//     }
+//
+//     fn len(&self) -> usize {
+//         self.len()
+//     }
+//
+//     fn get(&self, index: usize) -> Option<&Self::Item> {
+//         self.as_slice().get(index)
+//     }
+//
+//     fn get_mut(&mut self, index: usize) -> Option<&mut Self::Item> {
+//         self.as_mut_slice().get_mut(index)
+//     }
+// }
 
 macro_rules! generation {
 ($u:ty) => {
@@ -91,27 +91,27 @@ impl Fixed for () {
     }
 }
 
-impl VecType for usize {
-    type Item = ();
-
-    fn pop(&mut self) -> Option<Self::Item> {
-        *self -= 1;
-        None
-    }
-
-    fn push(&mut self, _item: Self::Item) {
-        *self += 1;
-    }
-
-    fn len(&self) -> usize {
-        *self
-    }
-
-    fn get(&self, _index: usize) -> Option<&Self::Item> {
-        None
-    }
-
-    fn get_mut(&mut self, _index: usize) -> Option<&mut Self::Item> {
-        None
-    }
-}
+// impl VecType for usize {
+//     type Item = ();
+//
+//     fn pop(&mut self) -> Option<Self::Item> {
+//         *self -= 1;
+//         None
+//     }
+//
+//     fn push(&mut self, _item: Self::Item) {
+//         *self += 1;
+//     }
+//
+//     fn len(&self) -> usize {
+//         *self
+//     }
+//
+//     fn get(&self, _index: usize) -> Option<&Self::Item> {
+//         None
+//     }
+//
+//     fn get_mut(&mut self, _index: usize) -> Option<&mut Self::Item> {
+//         None
+//     }
+// }

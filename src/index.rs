@@ -1,18 +1,20 @@
 use crate::*;
 use std::convert::TryFrom;
 
-pub trait Index: Sized + Debug + Copy + Eq + Hash + Add + TryFrom<usize> {
-    type Vec: VecType<Item=Self>;
+pub trait Index: Default + Sized + Debug + Copy + Eq + Hash + TryFrom<usize> {
     fn index(self) -> usize;
+    fn increment(&mut self);
 }
 
 macro_rules! index {
     ($u:ty) => {
         item! {
             impl Index for $u {
-                type Vec = Vec<Self>;
                 fn index(self) -> usize {
                     self.try_into().unwrap()
+                }
+                fn increment(&mut self) {
+                    *self += 1;
                 }
             }
 
