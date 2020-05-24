@@ -90,6 +90,10 @@ impl<A: Arena<Generation=G>, G: Dynamic, T> Insert<&Valid<'_, A>, T> for Compone
 }
 
 impl<A: Arena, T> Component<A, T> {
+    pub fn iter(&self) -> impl Iterator<Item=&T> {
+        self.values.iter()
+    }
+
     pub fn len(&self) -> usize {
         self.values.len()
     }

@@ -1,7 +1,31 @@
 use crate::*;
-use bit_set::BitSet;
 use std::any::type_name;
 use std::convert::TryFrom;
+use bit_vec::BitVec;
+
+pub trait Validate<ID, A: Arena> where A::Generation: Dynamic {
+    fn validate(&self, id: ID) -> Option<Valid<A>>;
+}
+
+impl<A: Arena> Validate<Id<A>, A> for DynamicAllocator<A> where A::Generation: Dynamic {
+    fn validate(&self, id: Id<A>) -> Option<Valid<'_, A>> {
+        if self.is_alive(id) {
+            Some(Valid::new(id))
+        } else {
+            None
+        }
+    }
+}
+
+impl<A: Arena> Validate<&Id<A>, A> for DynamicAllocator<A> where A::Generation: Dynamic {
+    fn validate(&self, id: &Id<A>) -> Option<Valid<'_, A>> {
+        if self.is_alive(*id) {
+            Some(Valid::new(*id))
+        } else {
+            None
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct DynamicAllocator<A: Arena>
@@ -9,7 +33,7 @@ pub struct DynamicAllocator<A: Arena>
 {
     gen: Vec<A::Generation>,
     dead: Vec<A::Index>,
-    living: BitSet,
+    living: BitVec,
 }
 
 impl<A: Arena> Default for DynamicAllocator<A> where A::Generation: Dynamic {
@@ -36,19 +60,26 @@ impl<A: Arena> DynamicAllocator<A> where A::Generation: Dynamic {
     fn reuse_index(&mut self, index: A::Index) -> Id<A> {
         let i = index.index();
         let gen = self.gen[i];
-        self.living.insert(i);
-        Id { index, gen }
+
+        self.living.set(i, true);
+
+        let new_id = Id { index, gen };
+
+        new_id
     }
 
     fn create_new(&mut self) -> Id<A> {
         let i = self.gen.len();
-        self.living.insert(i);
+
+        self.living.push(true);
+
         let index = <A::Index as TryFrom<usize>>::try_from(i)
             .ok()
             .expect(&format!("{}::create_new: usize out of range for index type: {}", type_name::<Self>(), type_name::<A::Index>()));
 
         let gen = A::Generation::first();
         self.gen.push(gen);
+
         Id { index, gen }
     }
 
@@ -61,8 +92,7 @@ impl<A: Arena> DynamicAllocator<A> where A::Generation: Dynamic {
             }
 
             self.dead.push(id.index);
-
-            self.living.remove(i);
+            self.living.set(i, false);
         }
     }
 
@@ -74,11 +104,7 @@ impl<A: Arena> DynamicAllocator<A> where A::Generation: Dynamic {
         }
     }
 
-    pub fn validate(&self, id: Id<A>) -> Option<Valid<A>> {
-        if self.is_alive(id) {
-            Some(Valid::new(id))
-        } else {
-            None
-        }
+    pub fn living(&self) -> impl Iterator<Item=bool> + '_ {
+        self.living.iter()
     }
 }

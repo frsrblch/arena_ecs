@@ -22,7 +22,47 @@ fn main() {
         })
     };
 
-    let _earth = world.create_planet(earth, sol);
+    let earth = world.create_planet(earth, sol);
+
+    let usa = GovernmentRow {
+        name: "United States of America".to_string(),
+    };
+
+    let usa_govt = world.create_government(usa);
+
+    let links = ColonyLinks {
+        body: earth.body,
+        government: usa_govt,
+    };
+
+    let usa = ColonyRow {
+        name: "America".to_string(),
+        population: 376e6,
+    };
+
+    let _usa = world.create_colony(usa, links);
+
+    let china = GovernmentRow {
+        name: "People's Republic of China".to_string(),
+    };
+
+    let china_govt = world.create_government(china);
+
+    let links = ColonyLinks {
+        body: earth.body,
+        government: china_govt,
+    };
+
+    let china = ColonyRow {
+        name: "China".to_string(),
+        population: 1.657e9,
+    };
+
+    let china = world.create_colony(china, links);
+
+    world.allocators.colony.kill(china);
+
+    world.print_with_government();
 }
 
 use ecs_traits::*;
@@ -38,6 +78,14 @@ impl World {
         self.state.system.create(&mut self.allocators.system, system)
     }
 
+    pub fn create_colony(&mut self, colony: ColonyRow, links: ColonyLinks) -> Id<Colony> {
+        self.state.colony.create(&mut self.allocators.colony, colony, links)
+    }
+
+    pub fn create_government(&mut self, government: GovernmentRow) -> Id<Government> {
+        self.state.government.create(&mut self.allocators.government, government)
+    }
+
     pub fn create_planet(&mut self, planet: Planet, system: Id<System>) -> PlanetIds {
         let body = self.state.body.create(&mut self.allocators.body, planet.body, system);
 
@@ -48,6 +96,21 @@ impl World {
 
         PlanetIds { body, surface }
     }
+
+    pub fn print_with_government(&self) {
+        self.state.colony.name.iter()
+            .zip(self.state.colony.population.iter())
+            .zip(self.state.colony.government.iter())
+            .zip(self.allocators.colony.living())
+            .for_each(|(((colony, pop), govt_id), living)| {
+                if living {
+                    if let Some(govt_id) = self.allocators.government.validate(govt_id) {
+                        let govt = self.state.government.name.get(govt_id);
+                        println!("{} ({}): {}", colony, govt, pop);
+                    }
+                }
+            });
+    }
 }
 
 #[derive(Debug, Default)]
@@ -56,6 +119,7 @@ pub struct State {
     pub body: Body,
     pub surface: Surface,
     pub colony: Colony,
+    pub government: Government,
 }
 
 #[derive(Debug, Default)]
@@ -64,6 +128,7 @@ pub struct Allocators {
     pub body: Allocator<Body>,
     pub surface: Allocator<Surface>,
     pub colony: Allocator<Colony>,
+    pub government: Allocator<Government>,
 }
 
 #[derive(Debug, Default)]
@@ -74,7 +139,11 @@ pub struct System {
     pub mass: Component<Self, f64>,
 }
 
-fixed_arena!(System, u16);
+impl Arena for System {
+    type Index = u16;
+    type Generation = ();
+    type Allocator = FixedAllocator<Self>;
+}
 
 impl System {
     pub fn create(&mut self, allocator: &mut Allocator<Self>, system: SystemRow) -> Id<Self> {
@@ -120,7 +189,11 @@ pub struct Body {
     pub position: Component<Self, (f64, f64)>,
 }
 
-fixed_arena!(Body, u32);
+impl Arena for Body {
+    type Index = u32;
+    type Generation = ();
+    type Allocator = FixedAllocator<Self>;
+}
 
 impl Body {
     pub fn create(&mut self, allocator: &mut Allocator<Self>, body: BodyRow, system: Id<System>) -> Id<Self> {
@@ -164,7 +237,11 @@ pub struct Surface {
     pub albedo: Component<Self, f64>,
 }
 
-fixed_arena!(Surface, u32);
+impl Arena for Surface {
+    type Index = u32;
+    type Generation = ();
+    type Allocator = FixedAllocator<Self>;
+}
 
 impl Surface {
     pub fn create(&mut self, allocator: &mut Allocator<Self>, surface: SurfaceRow, links: SurfaceLinks) -> Id<Surface> {
@@ -213,7 +290,11 @@ pub struct Colony {
     pub government: Component<Self, Id<Government>>,
 }
 
-dynamic_arena!(Colony, u16, NonZeroU16);
+impl Arena for Colony {
+    type Index = u16;
+    type Generation = NonZeroU16;
+    type Allocator = DynamicAllocator<Self>;
+}
 
 impl Colony {
     pub fn create(&mut self, allocator: &mut Allocator<Self>, colony: ColonyRow, links: ColonyLinks) -> Id<Self> {
@@ -239,13 +320,6 @@ impl Colony {
     fn defaults(&mut self, id: Valid<Self>) {
         self.food.insert(id, Default::default());
     }
-
-    pub fn print_with_government(&self, _govt: &Government) {
-        // TODO iterate through valid ids, or maintain some kind of Vec<Option<Id<A>>>
-        // TODO iterate through component values / zip components together
-
-
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -265,7 +339,28 @@ pub struct Government {
     pub name: Component<Self, String>,
 }
 
-dynamic_arena!(Government, u8, NonZeroU8);
+impl Arena for Government {
+    type Index = u8;
+    type Generation = NonZeroU8;
+    type Allocator = DynamicAllocator<Self>;
+}
+
+impl Government {
+    pub fn create(&mut self, allocator: &mut Allocator<Self>, government: GovernmentRow) -> Id<Self> {
+        let id = allocator.create();
+        self.insert(id, government);
+        id.id
+    }
+
+    fn insert(&mut self, id: Valid<Self>, government: GovernmentRow) {
+        self.name.insert(id, government.name);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct GovernmentRow {
+    pub name: String,
+}
 
 #[test]
 fn id_sizes() {
@@ -277,4 +372,13 @@ fn id_sizes() {
 
     assert_eq!(4, std::mem::size_of::<Id<Colony>>());
     assert_eq!(4, std::mem::size_of::<Option<Id<Colony>>>()); // generational indices get option for free
+}
+
+#[test]
+fn swap_delete() {
+    let mut v = vec![2,3,5,7,13];
+
+    v.swap_remove(3);
+
+    assert_eq!(v, [2,3,5,13]);
 }
