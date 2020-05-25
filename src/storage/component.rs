@@ -1,15 +1,6 @@
 use crate::*;
 use std::marker::PhantomData;
 
-pub trait Get<ID, T> {
-    fn get(&self, id: ID) -> &T;
-    fn get_mut(&mut self, id: ID) -> &mut T;
-}
-
-pub trait Insert<ID, T> {
-    fn insert(&mut self, id: ID, value: T);
-}
-
 #[derive(Debug)]
 pub struct Component<A: Arena, T> {
     values: Vec<T>,

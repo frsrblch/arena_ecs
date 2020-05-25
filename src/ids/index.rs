@@ -1,7 +1,7 @@
 use crate::*;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
-pub trait Index: Default + Sized + Debug + Copy + Eq + Hash + TryFrom<usize> {
+pub trait Index: Default + Sized + Debug + Copy + Eq + Hash + TryFrom<usize> + TryInto<usize> {
     fn index(self) -> usize;
     fn increment(&mut self);
 }
