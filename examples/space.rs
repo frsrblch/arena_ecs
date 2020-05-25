@@ -60,9 +60,7 @@ fn main() {
         population: 1.657e9,
     };
 
-    let china = world.create_linked(china, links);
-
-    world.allocators.colony.kill(china);
+    let _china = world.create_linked(china, links);
 
     world.print_with_government();
 }
