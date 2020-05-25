@@ -10,7 +10,7 @@ fn main() {
         mass: 1.989e30,
     };
 
-    let sol = world.create_system(sol);
+    let sol = world.create(sol);
 
     let earth = Planet {
         body: BodyRow {
@@ -24,13 +24,13 @@ fn main() {
         }),
     };
 
-    let earth = world.create_planet(earth, sol);
+    let earth = world.create_linked(earth, sol);
 
     let usa = GovernmentRow {
         name: "United States of America".to_string(),
     };
 
-    let usa_govt = world.create_government(usa);
+    let usa_govt = world.create(usa);
 
     let links = ColonyLinks {
         body: earth.body,
@@ -42,13 +42,13 @@ fn main() {
         population: 376e6,
     };
 
-    let _usa = world.create_colony(usa, links);
+    let _usa = world.create_linked(usa, links);
 
     let china = GovernmentRow {
         name: "People's Republic of China".to_string(),
     };
 
-    let china_govt = world.create_government(china);
+    let china_govt = world.create(china);
 
     let links = ColonyLinks {
         body: earth.body,
@@ -60,7 +60,7 @@ fn main() {
         population: 1.657e9,
     };
 
-    let china = world.create_colony(china, links);
+    let china = world.create_linked(china, links);
 
     world.allocators.colony.kill(china);
 
@@ -74,45 +74,8 @@ pub struct World {
 }
 
 impl World {
-    pub fn create_system(&mut self, system: SystemRow) -> Id<System> {
-        self.state
-            .system
-            .create(&mut self.allocators.system, system)
-    }
-
-    pub fn create_colony(&mut self, colony: ColonyRow, links: ColonyLinks) -> Id<Colony> {
-        self.state
-            .colony
-            .create(&mut self.allocators.colony, colony, links)
-    }
-
-    pub fn create_government(&mut self, government: GovernmentRow) -> Id<Government> {
-        self.state
-            .government
-            .create(&mut self.allocators.government, government)
-    }
-
-    pub fn create_planet(&mut self, planet: Planet, system: Id<System>) -> PlanetIds {
-        let body = self
-            .state
-            .body
-            .create(&mut self.allocators.body, planet.body, system);
-
-        let surface = planet.surface.map(|surface| {
-            let links = SurfaceLinks { body, system };
-            self.state
-                .surface
-                .create(&mut self.allocators.surface, surface, links)
-        });
-
-        PlanetIds { body, surface }
-    }
-
     pub fn print_with_government(&self) {
-        self.state
-            .colony
-            .name
-            .iter()
+        self.state.colony.name.iter()
             .zip(self.state.colony.population.iter())
             .zip(self.state.colony.government.iter())
             .zip(self.allocators.colony.living())
@@ -182,10 +145,34 @@ pub struct SystemRow {
     pub mass: f64,
 }
 
+impl Create<SystemRow> for World {
+    type Id = Id<System>;
+
+    fn create(&mut self, value: SystemRow) -> Id<System> {
+        self.state.system.create(&mut self.allocators.system, value)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Planet {
     pub body: BodyRow,
     pub surface: Option<SurfaceRow>,
+}
+
+impl CreateLinked<Planet> for World {
+    type Links = Id<System>;
+    type Id = PlanetIds;
+
+    fn create_linked(&mut self, planet: Planet, system: Self::Links) -> PlanetIds {
+        let body = self.create_linked(planet.body, system);
+
+        let surface = planet.surface.map(|surface| {
+            let links = SurfaceLinks { body, system };
+            self.create_linked(surface, links)
+        });
+
+        PlanetIds { body, surface }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -247,6 +234,16 @@ pub struct BodyRow {
     pub radius: f64,
 }
 
+impl CreateLinked<BodyRow> for World {
+    type Links = Id<System>;
+    type Id = Id<Body>;
+
+    fn create_linked(&mut self, value: BodyRow, system: Id<System>) -> Id<Body> {
+        self.state.body.create(&mut self.allocators.body, value, system)
+    }
+}
+
+
 #[derive(Debug, Default)]
 pub struct Surface {
     pub body: Component<Self, Id<Body>>,
@@ -297,6 +294,15 @@ impl Surface {
 pub struct SurfaceRow {
     pub area: f64,
     pub albedo: f64,
+}
+
+impl CreateLinked<SurfaceRow> for World {
+    type Links = SurfaceLinks;
+    type Id = Id<Surface>;
+
+    fn create_linked(&mut self, row: SurfaceRow, links: Self::Links) -> Id<Surface> {
+        self.state.surface.create(&mut self.allocators.surface, row, links)
+    }
 }
 
 #[derive(Debug)]
@@ -357,6 +363,15 @@ pub struct ColonyRow {
     pub population: f64,
 }
 
+impl CreateLinked<ColonyRow> for World {
+    type Links = ColonyLinks;
+    type Id = Id<Colony>;
+
+    fn create_linked(&mut self, row: ColonyRow, links: Self::Links) -> Self::Id {
+        self.state.colony.create(&mut self.allocators.colony, row, links)
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct ColonyLinks {
     pub body: Id<Body>,
@@ -393,6 +408,16 @@ impl Government {
 #[derive(Debug, Clone)]
 pub struct GovernmentRow {
     pub name: String,
+}
+
+impl Create<GovernmentRow> for World {
+    type Id = Id<Government>;
+
+    fn create(&mut self, row: GovernmentRow) -> Self::Id {
+        self.state
+            .government
+            .create(&mut self.allocators.government, row)
+    }
 }
 
 #[test]
