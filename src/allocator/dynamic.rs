@@ -76,7 +76,7 @@ impl<A: Arena<Generation=G>, G: Dynamic> DynamicAllocator<A> {
 
     pub fn kill(&mut self, id: Id<A>) {
         if self.is_alive(id) {
-            let i = id.index();
+            let i = id.to_usize();
 
             if let Some(gen) = self.current_gen.get_mut(i) {
                 *gen = gen.next_gen();
@@ -88,7 +88,7 @@ impl<A: Arena<Generation=G>, G: Dynamic> DynamicAllocator<A> {
     }
 
     pub fn is_alive(&self, id: Id<A>) -> bool {
-        if let Some(gen) = self.current_gen.get(id.index()) {
+        if let Some(gen) = self.current_gen.get(id.to_usize()) {
             id.gen.eq(gen)
         } else {
             false

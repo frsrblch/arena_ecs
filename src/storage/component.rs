@@ -90,33 +90,27 @@ impl<A: Arena, T> Component<A, T> {
     }
 
     fn get_unchecked(&self, id: Id<A>) -> &T {
-        self.values
-            .get(id.index())
-            .expect(
-                &format!("{}: invalid id index ({:?})",
-                        std::any::type_name::<Self>(),
-                        id
-                )
-            )
+        self.values.get(id.to_usize()).expect(&format!(
+            "{}: invalid id index ({:?})",
+            std::any::type_name::<Self>(),
+            id
+        ))
     }
 
     fn get_mut_unchecked(&mut self, id: Id<A>) -> &mut T {
-        self.values
-            .get_mut(id.index())
-            .expect(
-                &format!("{}: invalid id index ({:?})",
-                         std::any::type_name::<Self>(),
-                         id
-                )
-            )
+        self.values.get_mut(id.to_usize()).expect(&format!(
+            "{}: invalid id index ({:?})",
+            std::any::type_name::<Self>(),
+            id
+        ))
     }
 
     fn insert_unchecked(&mut self, id: Id<A>, value: T) {
         match self.values.len() {
-            len if len > id.index() => {
-                self.values[id.index()] = value;
+            len if len > id.to_usize() => {
+                self.values[id.to_usize()] = value;
             }
-            len if len == id.index() => {
+            len if len == id.to_usize() => {
                 self.values.push(value);
             }
             _ => panic!(
