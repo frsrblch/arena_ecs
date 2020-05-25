@@ -1,3 +1,5 @@
+use arena_ecs::*;
+
 fn main() {
     let mut world = World::default();
 
@@ -64,8 +66,6 @@ fn main() {
 
     world.print_with_government();
 }
-
-use ecs_traits::*;
 
 #[derive(Debug, Default)]
 pub struct World {
