@@ -107,3 +107,75 @@ impl<A: Arena<Generation=G>, G: Dynamic> DynamicAllocator<A> {
         self.living.iter()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::allocator::test::GenerationalArena;
+
+    #[test]
+    #[should_panic]
+    fn allocator_panic_when_index_out_of_range() {
+        let mut allocator = Allocator::<GenerationalArena>::default();
+        for _ in 0..257 {
+            let _id = allocator.create();
+        }
+    }
+
+    #[test]
+    fn create_fixed() {
+        let mut fixed_allocator = Allocator::<GenerationalArena>::default();
+
+        assert_eq!(Id { index: 0, gen: NonZeroU8::first() }, fixed_allocator.create().id);
+        assert_eq!(Id { index: 1, gen: NonZeroU8::first() }, fixed_allocator.create().id);
+    }
+
+    #[test]
+    fn create_generational() {
+        let mut gen_allocator = Allocator::<GenerationalArena>::default();
+
+        assert_eq!(Id { index: 0, gen: NonZeroU8::first() }, gen_allocator.create().id);
+        assert_eq!(Id { index: 1, gen: NonZeroU8::first() }, gen_allocator.create().id);
+    }
+
+    #[test]
+    fn reuse_generational() {
+        let mut gen_allocator = Allocator::<GenerationalArena>::default();
+
+        let id1 = gen_allocator.create().id;
+        gen_allocator.kill(id1);
+
+        assert_eq!(Id { index: 0, gen: NonZeroU8::first().next_gen() }, gen_allocator.create().id);
+        assert_eq!(Id { index: 1, gen: NonZeroU8::first() }, gen_allocator.create().id);
+    }
+
+    #[test]
+    fn validate_valid_returns_some() {
+        let mut allocator = Allocator::<GenerationalArena>::default();
+
+        let id = allocator.create().id;
+
+        assert!(allocator.validate(id).is_some());
+    }
+
+    #[test]
+    fn validate_invalid_returns_none() {
+        let mut allocator = Allocator::<GenerationalArena>::default();
+
+        let id = allocator.create().id;
+        allocator.kill(id);
+
+        assert!(allocator.validate(id).is_none());
+    }
+
+    #[test]
+    fn gen_alloc_lifetime_test() {
+        let mut allocator = Allocator::<GenerationalArena>::default();
+
+        let id1 = allocator.create().id; // Remove ".id" to cause a compiler error
+        let id2 = allocator.create();
+
+        println!("{:?}", id1);
+        println!("{:?}", id2);
+    }
+}
