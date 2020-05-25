@@ -1,10 +1,9 @@
 use std::fmt::Debug;
-use crate::{Index, Fixed};
 use std::hash::Hash;
 
 pub trait Arena: Debug + Default {
-    type Index: Index;
-    type Generation: Copy + Eq + Hash + Fixed;
+    type Index: crate::Index;
+    type Generation: Debug + Copy + Eq + Hash;
     type Allocator: Debug + Default;
 }
 

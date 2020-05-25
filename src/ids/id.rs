@@ -8,7 +8,7 @@ pub struct Id<A: Arena> {
     pub(crate) gen: A::Generation,
 }
 
-impl<A: Arena> Id<A> where A::Generation: Fixed {
+impl<A: Arena> Id<A> {
     pub(crate) fn index(self) -> usize {
         self.index.index()
     }
