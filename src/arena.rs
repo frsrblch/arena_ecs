@@ -9,22 +9,22 @@ pub trait Arena: Debug + Default {
 
 #[macro_export]
 macro_rules! fixed_arena {
-($arena:ty, $index:ty) => {
-    impl Arena for $arena {
-        type Index = $index;
-        type Generation = ();
-        type Allocator = FixedAllocator<Self>;
+    ($arena:ty, $index:ty) => {
+        impl Arena for $arena {
+            type Index = $index;
+            type Generation = ();
+            type Allocator = FixedAllocator<Self>;
+        }
     }
-}
 }
 
 #[macro_export]
 macro_rules! dynamic_arena {
-($arena:ty, $index:ty, $gen:ty) => {
-    impl Arena for $arena {
-        type Index = $index;
-        type Generation = $gen;
-        type Allocator = DynamicAllocator<Self>;
+    ($arena:ty, $index:ty, $gen:ty) => {
+        impl Arena for $arena {
+            type Index = $index;
+            type Generation = $gen;
+            type Allocator = DynamicAllocator<Self>;
+        }
     }
-}
 }
