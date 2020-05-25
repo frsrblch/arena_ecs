@@ -106,18 +106,62 @@ impl<A: Arena, T> Component<A, T> {
     }
 
     fn insert_unchecked(&mut self, id: Id<A>, value: T) {
-        match self.values.len() {
-            len if len > id.to_usize() => {
-                self.values[id.to_usize()] = value;
-            }
-            len if len == id.to_usize() => {
-                self.values.push(value);
-            }
-            _ => panic!(
-                "{}: attempted to insert at invalid index ({:?})",
-                std::any::type_name::<Self>(),
-                id
-            ),
+        let index = id.to_usize();
+
+        debug_assert!(self.values.len() >= index);
+
+        if let Some(component) = self.values.get_mut(index) {
+            *component = value;
+        } else if self.values.len() == index {
+            self.values.push(value);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test::FixedArena;
+
+    #[test]
+    #[should_panic]
+    fn get_at_invalid_index_panics() {
+        let components = Component::<FixedArena, u32>::default();
+        let id = Id { index: 0, gen: () };
+
+        components.get(id);
+    }
+
+    #[test]
+    fn get_at_valid_index() {
+        let mut components = Component::<FixedArena, u32>::default();
+        let id = Id { index: 0, gen: () };
+
+        components.insert(id, 5);
+
+        assert_eq!(&5, components.get(id));
+    }
+
+    #[test]
+    fn insert_at_index_equals_len_extends_vec() {
+        let mut components = Component::<FixedArena, u32>::default();
+        let id = Id { index: 0, gen: () };
+
+        components.insert(id, 5);
+
+        assert_eq!(1, components.len());
+        assert_eq!(5, components.values[0]);
+    }
+
+    #[test]
+    fn insert_at_index_less_than_len_replaces_existing_value() {
+        let mut components = Component::<FixedArena, u32>::default();
+        let id = Id { index: 0, gen: () };
+
+        components.insert(id, 3);
+        components.insert(id, 5);
+
+        assert_eq!(1, components.len());
+        assert_eq!(5, components.values[0]);
     }
 }

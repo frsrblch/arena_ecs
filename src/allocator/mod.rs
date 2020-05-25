@@ -34,17 +34,17 @@ impl<A: Arena> DerefMut for Allocator<A> {
 }
 
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use super::*;
     use std::mem::size_of;
 
     #[derive(Debug, Default)]
-    pub(super) struct FixedArena;
+    pub(crate) struct FixedArena;
 
     fixed_arena!(FixedArena, u8);
 
     #[derive(Debug, Default)]
-    pub(super) struct GenerationalArena;
+    pub(crate) struct GenerationalArena;
 
     dynamic_arena!(GenerationalArena, u8, NonZeroU8);
 
