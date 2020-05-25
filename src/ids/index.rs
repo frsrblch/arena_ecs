@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 use std::convert::{TryFrom, TryInto};
 
 pub trait Index: Debug + Copy + Eq + Hash {

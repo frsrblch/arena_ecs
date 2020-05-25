@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 
 pub trait Dynamic: Debug + Copy + Eq + Hash {
     fn first_gen() -> Self;
