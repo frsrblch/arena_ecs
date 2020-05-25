@@ -1,6 +1,4 @@
 use crate::*;
-use std::any::type_name;
-use std::convert::TryFrom;
 use bit_vec::BitVec;
 
 pub trait Validate<ID, A: Arena> where A::Generation: Dynamic {
@@ -54,7 +52,7 @@ impl<A: Arena<Generation=G>, G: Dynamic> DynamicAllocator<A> {
     }
 
     fn reuse_index(&mut self, index: A::Index) -> Id<A> {
-        let i = index.index();
+        let i = index.to_usize();
 
         let gen = self.current_gen[i];
 
@@ -71,15 +69,9 @@ impl<A: Arena<Generation=G>, G: Dynamic> DynamicAllocator<A> {
 
         self.living.push(true);
 
-        let index = Self::get_index(index);
+        let index = A::Index::from_usize(index);
 
         Id { index, gen }
-    }
-
-    fn get_index(i: usize) -> A::Index {
-        <A::Index as TryFrom<usize>>::try_from(i)
-            .ok()
-            .expect(&format!("{}::create_new: usize out of range for index type: {}", type_name::<Self>(), type_name::<A::Index>()))
     }
 
     pub fn kill(&mut self, id: Id<A>) {
