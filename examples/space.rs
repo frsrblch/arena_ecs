@@ -9,7 +9,7 @@ fn main() {
     };
 
     let sol = world.create_system(sol);
-    
+
     let earth = Planet {
         body: BodyRow {
             name: "Earth".to_string(),
@@ -19,7 +19,7 @@ fn main() {
         surface: Some(SurfaceRow {
             area: 510.1e6,
             albedo: 0.3,
-        })
+        }),
     };
 
     let earth = world.create_planet(earth, sol);
@@ -75,30 +75,44 @@ pub struct World {
 
 impl World {
     pub fn create_system(&mut self, system: SystemRow) -> Id<System> {
-        self.state.system.create(&mut self.allocators.system, system)
+        self.state
+            .system
+            .create(&mut self.allocators.system, system)
     }
 
     pub fn create_colony(&mut self, colony: ColonyRow, links: ColonyLinks) -> Id<Colony> {
-        self.state.colony.create(&mut self.allocators.colony, colony, links)
+        self.state
+            .colony
+            .create(&mut self.allocators.colony, colony, links)
     }
 
     pub fn create_government(&mut self, government: GovernmentRow) -> Id<Government> {
-        self.state.government.create(&mut self.allocators.government, government)
+        self.state
+            .government
+            .create(&mut self.allocators.government, government)
     }
 
     pub fn create_planet(&mut self, planet: Planet, system: Id<System>) -> PlanetIds {
-        let body = self.state.body.create(&mut self.allocators.body, planet.body, system);
+        let body = self
+            .state
+            .body
+            .create(&mut self.allocators.body, planet.body, system);
 
         let surface = planet.surface.map(|surface| {
             let links = SurfaceLinks { body, system };
-            self.state.surface.create(&mut self.allocators.surface, surface, links)
+            self.state
+                .surface
+                .create(&mut self.allocators.surface, surface, links)
         });
 
         PlanetIds { body, surface }
     }
 
     pub fn print_with_government(&self) {
-        self.state.colony.name.iter()
+        self.state
+            .colony
+            .name
+            .iter()
             .zip(self.state.colony.population.iter())
             .zip(self.state.colony.government.iter())
             .zip(self.allocators.colony.living())
@@ -196,7 +210,12 @@ impl Arena for Body {
 }
 
 impl Body {
-    pub fn create(&mut self, allocator: &mut Allocator<Self>, body: BodyRow, system: Id<System>) -> Id<Self> {
+    pub fn create(
+        &mut self,
+        allocator: &mut Allocator<Self>,
+        body: BodyRow,
+        system: Id<System>,
+    ) -> Id<Self> {
         let id = allocator.create();
 
         self.insert(id, body);
@@ -244,7 +263,12 @@ impl Arena for Surface {
 }
 
 impl Surface {
-    pub fn create(&mut self, allocator: &mut Allocator<Self>, surface: SurfaceRow, links: SurfaceLinks) -> Id<Surface> {
+    pub fn create(
+        &mut self,
+        allocator: &mut Allocator<Self>,
+        surface: SurfaceRow,
+        links: SurfaceLinks,
+    ) -> Id<Surface> {
         let id = allocator.create();
 
         self.insert(id, surface);
@@ -297,7 +321,12 @@ impl Arena for Colony {
 }
 
 impl Colony {
-    pub fn create(&mut self, allocator: &mut Allocator<Self>, colony: ColonyRow, links: ColonyLinks) -> Id<Self> {
+    pub fn create(
+        &mut self,
+        allocator: &mut Allocator<Self>,
+        colony: ColonyRow,
+        links: ColonyLinks,
+    ) -> Id<Self> {
         let id = allocator.create();
 
         self.insert(id, colony);
@@ -346,7 +375,11 @@ impl Arena for Government {
 }
 
 impl Government {
-    pub fn create(&mut self, allocator: &mut Allocator<Self>, government: GovernmentRow) -> Id<Self> {
+    pub fn create(
+        &mut self,
+        allocator: &mut Allocator<Self>,
+        government: GovernmentRow,
+    ) -> Id<Self> {
         let id = allocator.create();
         self.insert(id, government);
         id.id
@@ -372,13 +405,4 @@ fn id_sizes() {
 
     assert_eq!(4, std::mem::size_of::<Id<Colony>>());
     assert_eq!(4, std::mem::size_of::<Option<Id<Colony>>>()); // generational indices get option for free
-}
-
-#[test]
-fn swap_delete() {
-    let mut v = vec![2,3,5,7,13];
-
-    v.swap_remove(3);
-
-    assert_eq!(v, [2,3,5,13]);
 }

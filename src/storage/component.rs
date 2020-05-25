@@ -16,7 +16,7 @@ impl<A: Arena, T> Default for Component<A, T> {
     }
 }
 
-impl<A: Arena<Generation=()>, T> Get<Id<A>, T> for Component<A, T> {
+impl<A: Arena<Generation = ()>, T> Get<Id<A>, T> for Component<A, T> {
     fn get(&self, id: Id<A>) -> &T {
         self.get_unchecked(id)
     }
@@ -26,7 +26,7 @@ impl<A: Arena<Generation=()>, T> Get<Id<A>, T> for Component<A, T> {
     }
 }
 
-impl<A: Arena<Generation=()>, T> Get<&Id<A>, T> for Component<A, T> {
+impl<A: Arena<Generation = ()>, T> Get<&Id<A>, T> for Component<A, T> {
     fn get(&self, id: &Id<A>) -> &T {
         self.get_unchecked(*id)
     }
@@ -36,7 +36,7 @@ impl<A: Arena<Generation=()>, T> Get<&Id<A>, T> for Component<A, T> {
     }
 }
 
-impl<A: Arena<Generation=G>, G: Dynamic, T> Get<Valid<'_, A>, T> for Component<A, T> {
+impl<A: Arena<Generation = G>, G: Dynamic, T> Get<Valid<'_, A>, T> for Component<A, T> {
     fn get(&self, id: Valid<A>) -> &T {
         self.get_unchecked(id.id)
     }
@@ -46,7 +46,7 @@ impl<A: Arena<Generation=G>, G: Dynamic, T> Get<Valid<'_, A>, T> for Component<A
     }
 }
 
-impl<A: Arena<Generation=G>, G: Dynamic, T> Get<&Valid<'_, A>, T> for Component<A, T> {
+impl<A: Arena<Generation = G>, G: Dynamic, T> Get<&Valid<'_, A>, T> for Component<A, T> {
     fn get(&self, id: &Valid<A>) -> &T {
         self.get_unchecked(id.id)
     }
@@ -56,32 +56,32 @@ impl<A: Arena<Generation=G>, G: Dynamic, T> Get<&Valid<'_, A>, T> for Component<
     }
 }
 
-impl<A: Arena<Generation=()>, T> Insert<Id<A>, T> for Component<A, T> {
+impl<A: Arena<Generation = ()>, T> Insert<Id<A>, T> for Component<A, T> {
     fn insert(&mut self, id: Id<A>, value: T) {
         self.insert_unchecked(id, value);
     }
 }
 
-impl<A: Arena<Generation=()>, T> Insert<&Id<A>, T> for Component<A, T> {
+impl<A: Arena<Generation = ()>, T> Insert<&Id<A>, T> for Component<A, T> {
     fn insert(&mut self, id: &Id<A>, value: T) {
         self.insert_unchecked(*id, value);
     }
 }
 
-impl<A: Arena<Generation=G>, G: Dynamic, T> Insert<Valid<'_, A>, T> for Component<A, T> {
+impl<A: Arena<Generation = G>, G: Dynamic, T> Insert<Valid<'_, A>, T> for Component<A, T> {
     fn insert(&mut self, id: Valid<A>, value: T) {
         self.insert_unchecked(id.id, value);
     }
 }
 
-impl<A: Arena<Generation=G>, G: Dynamic, T> Insert<&Valid<'_, A>, T> for Component<A, T> {
+impl<A: Arena<Generation = G>, G: Dynamic, T> Insert<&Valid<'_, A>, T> for Component<A, T> {
     fn insert(&mut self, id: &Valid<A>, value: T) {
         self.insert_unchecked(id.id, value);
     }
 }
 
 impl<A: Arena, T> Component<A, T> {
-    pub fn iter(&self) -> impl Iterator<Item=&T> {
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.values.iter()
     }
 

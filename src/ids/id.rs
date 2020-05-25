@@ -23,7 +23,7 @@ impl<A: Arena> Clone for Id<A> {
     fn clone(&self) -> Self {
         Self {
             index: self.index,
-            gen: self.gen
+            gen: self.gen,
         }
     }
 }

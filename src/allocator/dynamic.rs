@@ -1,11 +1,14 @@
 use crate::*;
 use bit_vec::BitVec;
 
-pub trait Validate<ID, A: Arena> where A::Generation: Dynamic {
+pub trait Validate<ID, A: Arena>
+where
+    A::Generation: Dynamic,
+{
     fn validate(&self, id: ID) -> Option<Valid<A>>;
 }
 
-impl<A: Arena<Generation=G>, G: Dynamic> Validate<Id<A>, A> for DynamicAllocator<A> {
+impl<A: Arena<Generation = G>, G: Dynamic> Validate<Id<A>, A> for DynamicAllocator<A> {
     fn validate(&self, id: Id<A>) -> Option<Valid<'_, A>> {
         if self.is_alive(id) {
             Some(Valid::new(id))
@@ -15,7 +18,7 @@ impl<A: Arena<Generation=G>, G: Dynamic> Validate<Id<A>, A> for DynamicAllocator
     }
 }
 
-impl<A: Arena<Generation=G>, G: Dynamic> Validate<&Id<A>, A> for DynamicAllocator<A> {
+impl<A: Arena<Generation = G>, G: Dynamic> Validate<&Id<A>, A> for DynamicAllocator<A> {
     fn validate(&self, id: &Id<A>) -> Option<Valid<'_, A>> {
         self.validate(*id)
     }
@@ -23,14 +26,15 @@ impl<A: Arena<Generation=G>, G: Dynamic> Validate<&Id<A>, A> for DynamicAllocato
 
 #[derive(Debug)]
 pub struct DynamicAllocator<A: Arena>
-    where A::Generation: Dynamic
+where
+    A::Generation: Dynamic,
 {
     current_gen: Vec<A::Generation>,
     dead: Vec<A::Index>,
     living: BitVec,
 }
 
-impl<A: Arena<Generation=G>, G: Dynamic> Default for DynamicAllocator<A> {
+impl<A: Arena<Generation = G>, G: Dynamic> Default for DynamicAllocator<A> {
     fn default() -> Self {
         Self {
             current_gen: vec![],
@@ -40,7 +44,7 @@ impl<A: Arena<Generation=G>, G: Dynamic> Default for DynamicAllocator<A> {
     }
 }
 
-impl<A: Arena<Generation=G>, G: Dynamic> DynamicAllocator<A> {
+impl<A: Arena<Generation = G>, G: Dynamic> DynamicAllocator<A> {
     pub fn create(&mut self) -> Valid<A> {
         let id = if let Some(index) = self.dead.pop() {
             self.reuse_index(index)
@@ -95,7 +99,7 @@ impl<A: Arena<Generation=G>, G: Dynamic> DynamicAllocator<A> {
         }
     }
 
-    pub fn living(&self) -> impl Iterator<Item=bool> + '_ {
+    pub fn living(&self) -> impl Iterator<Item = bool> + '_ {
         self.living.iter()
     }
 }
@@ -118,16 +122,40 @@ mod tests {
     fn create_fixed() {
         let mut fixed_allocator = Allocator::<GenerationalArena>::default();
 
-        assert_eq!(Id { index: 0, gen: NonZeroU8::first_gen() }, fixed_allocator.create().id);
-        assert_eq!(Id { index: 1, gen: NonZeroU8::first_gen() }, fixed_allocator.create().id);
+        assert_eq!(
+            Id {
+                index: 0,
+                gen: NonZeroU8::first_gen()
+            },
+            fixed_allocator.create().id
+        );
+        assert_eq!(
+            Id {
+                index: 1,
+                gen: NonZeroU8::first_gen()
+            },
+            fixed_allocator.create().id
+        );
     }
 
     #[test]
     fn create_generational() {
         let mut gen_allocator = Allocator::<GenerationalArena>::default();
 
-        assert_eq!(Id { index: 0, gen: NonZeroU8::first_gen() }, gen_allocator.create().id);
-        assert_eq!(Id { index: 1, gen: NonZeroU8::first_gen() }, gen_allocator.create().id);
+        assert_eq!(
+            Id {
+                index: 0,
+                gen: NonZeroU8::first_gen()
+            },
+            gen_allocator.create().id
+        );
+        assert_eq!(
+            Id {
+                index: 1,
+                gen: NonZeroU8::first_gen()
+            },
+            gen_allocator.create().id
+        );
     }
 
     #[test]
@@ -137,8 +165,20 @@ mod tests {
         let id1 = gen_allocator.create().id;
         gen_allocator.kill(id1);
 
-        assert_eq!(Id { index: 0, gen: NonZeroU8::first_gen().next_gen() }, gen_allocator.create().id);
-        assert_eq!(Id { index: 1, gen: NonZeroU8::first_gen() }, gen_allocator.create().id);
+        assert_eq!(
+            Id {
+                index: 0,
+                gen: NonZeroU8::first_gen().next_gen()
+            },
+            gen_allocator.create().id
+        );
+        assert_eq!(
+            Id {
+                index: 1,
+                gen: NonZeroU8::first_gen()
+            },
+            gen_allocator.create().id
+        );
     }
 
     #[test]

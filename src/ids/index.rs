@@ -33,7 +33,7 @@ macro_rules! index {
                 assert!(max.is_ok());
             }
         }
-    }
+    };
 }
 
 index!(u8);

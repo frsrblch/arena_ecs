@@ -1,11 +1,10 @@
 use crate::*;
-use std::ops::{Deref, DerefMut};
-pub use fixed::FixedAllocator;
 pub use dynamic::*;
+pub use fixed::FixedAllocator;
+use std::ops::{Deref, DerefMut};
 
-mod fixed;
 mod dynamic;
-
+mod fixed;
 
 #[derive(Debug)]
 pub struct Allocator<A: Arena> {

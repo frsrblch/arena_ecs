@@ -15,7 +15,7 @@ macro_rules! fixed_arena {
             type Generation = ();
             type Allocator = FixedAllocator<Self>;
         }
-    }
+    };
 }
 
 #[macro_export]
@@ -26,5 +26,5 @@ macro_rules! dynamic_arena {
             type Generation = $gen;
             type Allocator = DynamicAllocator<Self>;
         }
-    }
+    };
 }
