@@ -1,6 +1,6 @@
-use crate::*;
-use std::hash::Hasher;
+use std::hash::{Hasher, Hash};
 use std::marker::PhantomData;
+use crate::*;
 
 #[derive(Debug)]
 pub struct Id<A: Arena> {
@@ -42,8 +42,8 @@ impl<A: Arena> Eq for Id<A> {}
 
 #[derive(Debug)]
 pub struct Valid<'a, A: Arena>
-where
-    A::Generation: Dynamic
+    where
+        A::Generation: Dynamic
 {
     pub id: Id<A>,
     marker: PhantomData<&'a Allocator<A>>,
@@ -52,7 +52,8 @@ where
 impl<A: Arena> Valid<'_, A> where A::Generation: Dynamic {
     pub(crate) fn new(id: Id<A>) -> Self {
         Valid {
-            id, marker: PhantomData
+            id,
+            marker: PhantomData
         }
     }
 }
@@ -63,4 +64,4 @@ impl<A: Arena> Clone for Valid<'_, A> where A::Generation: Dynamic {
     }
 }
 
-impl<A: Arena> Copy for Valid<'_, A>  where A::Generation: Dynamic {}
+impl<A: Arena> Copy for Valid<'_, A> where A::Generation: Dynamic {}

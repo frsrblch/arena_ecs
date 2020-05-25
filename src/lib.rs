@@ -3,15 +3,11 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use paste::item;
 
-pub use index::*;
-pub use generation::*;
 pub use ids::*;
 pub use allocator::*;
 pub use component::*;
 pub use map::*;
 
-mod index;
-mod generation;
 mod ids;
 mod allocator;
 mod component;
