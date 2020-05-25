@@ -7,7 +7,7 @@ pub trait Validate<ID, A: Arena> where A::Generation: Dynamic {
     fn validate(&self, id: ID) -> Option<Valid<A>>;
 }
 
-impl<A: Arena> Validate<Id<A>, A> for DynamicAllocator<A> where A::Generation: Dynamic {
+impl<A: Arena<Generation=G>, G: Dynamic> Validate<Id<A>, A> for DynamicAllocator<A> {
     fn validate(&self, id: Id<A>) -> Option<Valid<'_, A>> {
         if self.is_alive(id) {
             Some(Valid::new(id))
@@ -17,13 +17,9 @@ impl<A: Arena> Validate<Id<A>, A> for DynamicAllocator<A> where A::Generation: D
     }
 }
 
-impl<A: Arena> Validate<&Id<A>, A> for DynamicAllocator<A> where A::Generation: Dynamic {
+impl<A: Arena<Generation=G>, G: Dynamic> Validate<&Id<A>, A> for DynamicAllocator<A> {
     fn validate(&self, id: &Id<A>) -> Option<Valid<'_, A>> {
-        if self.is_alive(*id) {
-            Some(Valid::new(*id))
-        } else {
-            None
-        }
+        self.validate(*id)
     }
 }
 
@@ -31,22 +27,22 @@ impl<A: Arena> Validate<&Id<A>, A> for DynamicAllocator<A> where A::Generation: 
 pub struct DynamicAllocator<A: Arena>
     where A::Generation: Dynamic
 {
-    gen: Vec<A::Generation>,
+    current_gen: Vec<A::Generation>,
     dead: Vec<A::Index>,
     living: BitVec,
 }
 
-impl<A: Arena> Default for DynamicAllocator<A> where A::Generation: Dynamic {
+impl<A: Arena<Generation=G>, G: Dynamic> Default for DynamicAllocator<A> {
     fn default() -> Self {
         Self {
-            gen: vec![],
+            current_gen: vec![],
             dead: vec![],
             living: Default::default(),
         }
     }
 }
 
-impl<A: Arena> DynamicAllocator<A> where A::Generation: Dynamic {
+impl<A: Arena<Generation=G>, G: Dynamic> DynamicAllocator<A> {
     pub fn create(&mut self) -> Valid<A> {
         let id = if let Some(index) = self.dead.pop() {
             self.reuse_index(index)
@@ -59,35 +55,38 @@ impl<A: Arena> DynamicAllocator<A> where A::Generation: Dynamic {
 
     fn reuse_index(&mut self, index: A::Index) -> Id<A> {
         let i = index.index();
-        let gen = self.gen[i];
+
+        let gen = self.current_gen[i];
 
         self.living.set(i, true);
 
-        let new_id = Id { index, gen };
-
-        new_id
+        Id { index, gen }
     }
 
     fn create_new(&mut self) -> Id<A> {
-        let i = self.gen.len();
+        let index = self.current_gen.len();
+
+        let gen = A::Generation::first();
+        self.current_gen.push(gen);
 
         self.living.push(true);
 
-        let index = <A::Index as TryFrom<usize>>::try_from(i)
-            .ok()
-            .expect(&format!("{}::create_new: usize out of range for index type: {}", type_name::<Self>(), type_name::<A::Index>()));
-
-        let gen = A::Generation::first();
-        self.gen.push(gen);
+        let index = Self::get_index(index);
 
         Id { index, gen }
+    }
+
+    fn get_index(i: usize) -> A::Index {
+        <A::Index as TryFrom<usize>>::try_from(i)
+            .ok()
+            .expect(&format!("{}::create_new: usize out of range for index type: {}", type_name::<Self>(), type_name::<A::Index>()))
     }
 
     pub fn kill(&mut self, id: Id<A>) {
         if self.is_alive(id) {
             let i = id.index();
 
-            if let Some(gen) = self.gen.get_mut(i) {
+            if let Some(gen) = self.current_gen.get_mut(i) {
                 *gen = gen.next_gen();
             }
 
@@ -97,7 +96,7 @@ impl<A: Arena> DynamicAllocator<A> where A::Generation: Dynamic {
     }
 
     pub fn is_alive(&self, id: Id<A>) -> bool {
-        if let Some(gen) = self.gen.get(id.index()) {
+        if let Some(gen) = self.current_gen.get(id.index()) {
             id.gen.eq(gen)
         } else {
             false

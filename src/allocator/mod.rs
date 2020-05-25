@@ -39,11 +39,11 @@ mod test {
     use super::*;
     use std::mem::size_of;
 
-    // #[test]
-    // fn allocator_size() {
-    //     assert_eq!(24, size_of::<Allocator<FixedArena>>());
-    //     assert_eq!(80, size_of::<Allocator<GenerationalArena>>());
-    // }
+    #[test]
+    fn allocator_size() {
+        assert_eq!(1, size_of::<Allocator<FixedArena>>());
+        assert_eq!(80, size_of::<Allocator<GenerationalArena>>());
+    }
 
     #[test]
     fn id_size() {
