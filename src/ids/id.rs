@@ -7,7 +7,7 @@ pub struct Id<A: Arena> {
 }
 
 impl<A: Arena> Id<A> {
-    pub(crate) fn index(self) -> usize {
+    pub(crate) fn to_usize(self) -> usize {
         self.index.to_usize()
     }
 }
