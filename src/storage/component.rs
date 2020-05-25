@@ -85,6 +85,10 @@ impl<A: Arena, T> Component<A, T> {
         self.values.iter()
     }
 
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
+        self.values.iter_mut()
+    }
+
     pub fn len(&self) -> usize {
         self.values.len()
     }
