@@ -66,7 +66,7 @@ impl<A: Arena<Generation=G>, G: Dynamic> DynamicAllocator<A> {
     fn create_new(&mut self) -> Id<A> {
         let index = self.current_gen.len();
 
-        let gen = A::Generation::first();
+        let gen = A::Generation::first_gen();
         self.current_gen.push(gen);
 
         self.living.push(true);
@@ -126,16 +126,16 @@ mod tests {
     fn create_fixed() {
         let mut fixed_allocator = Allocator::<GenerationalArena>::default();
 
-        assert_eq!(Id { index: 0, gen: NonZeroU8::first() }, fixed_allocator.create().id);
-        assert_eq!(Id { index: 1, gen: NonZeroU8::first() }, fixed_allocator.create().id);
+        assert_eq!(Id { index: 0, gen: NonZeroU8::first_gen() }, fixed_allocator.create().id);
+        assert_eq!(Id { index: 1, gen: NonZeroU8::first_gen() }, fixed_allocator.create().id);
     }
 
     #[test]
     fn create_generational() {
         let mut gen_allocator = Allocator::<GenerationalArena>::default();
 
-        assert_eq!(Id { index: 0, gen: NonZeroU8::first() }, gen_allocator.create().id);
-        assert_eq!(Id { index: 1, gen: NonZeroU8::first() }, gen_allocator.create().id);
+        assert_eq!(Id { index: 0, gen: NonZeroU8::first_gen() }, gen_allocator.create().id);
+        assert_eq!(Id { index: 1, gen: NonZeroU8::first_gen() }, gen_allocator.create().id);
     }
 
     #[test]
@@ -145,8 +145,8 @@ mod tests {
         let id1 = gen_allocator.create().id;
         gen_allocator.kill(id1);
 
-        assert_eq!(Id { index: 0, gen: NonZeroU8::first().next_gen() }, gen_allocator.create().id);
-        assert_eq!(Id { index: 1, gen: NonZeroU8::first() }, gen_allocator.create().id);
+        assert_eq!(Id { index: 0, gen: NonZeroU8::first_gen().next_gen() }, gen_allocator.create().id);
+        assert_eq!(Id { index: 1, gen: NonZeroU8::first_gen() }, gen_allocator.create().id);
     }
 
     #[test]
