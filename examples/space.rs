@@ -50,14 +50,14 @@ fn main() {
 
     let china_govt = world.create(china);
 
-    let links = ColonyLinks {
-        body: earth.body,
-        government: china_govt,
-    };
-
     let china = ColonyRow {
         name: "China".to_string(),
         population: 1.657e9,
+    };
+
+    let links = ColonyLinks {
+        body: earth.body,
+        government: china_govt,
     };
 
     let _china = world.create_linked(china, links);
@@ -166,7 +166,9 @@ impl CreateLinked<Planet> for World {
 
         let surface = planet.surface.map(|surface| {
             let links = SurfaceLinks { body, system };
-            self.create_linked(surface, links)
+            let surface = self.create_linked(surface, links);
+            self.state.body.link_child(body, surface);
+            surface
         });
 
         PlanetIds { body, surface }
@@ -186,6 +188,8 @@ pub struct Body {
     pub mass: Component<Self, f64>,
     pub radius: Component<Self, f64>,
     pub position: Component<Self, (f64, f64)>,
+
+    pub surface: IdMap<Self, Surface>,
 }
 
 impl Arena for Body {
@@ -222,6 +226,12 @@ impl Body {
 
     fn defaults(&mut self, id: Id<Self>) {
         self.position.insert(id, Default::default());
+    }
+}
+
+impl LinkChild<Surface> for Body {
+    fn link_child(&mut self, id: Id<Self>, surface: Id<Surface>) {
+        self.surface.insert(id, surface)
     }
 }
 
