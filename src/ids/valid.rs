@@ -2,18 +2,12 @@ use super::*;
 use std::marker::PhantomData;
 
 #[derive(Debug)]
-pub struct Valid<'a, A: Arena>
-where
-    A::Generation: Dynamic,
-{
+pub struct Valid<'a, A: Arena> {
     pub id: Id<A>,
     marker: PhantomData<&'a Allocator<A>>,
 }
 
-impl<A: Arena> Valid<'_, A>
-where
-    A::Generation: Dynamic,
-{
+impl<A: Arena> Valid<'_, A> {
     pub(crate) fn new(id: Id<A>) -> Self {
         Valid {
             id,
@@ -22,13 +16,71 @@ where
     }
 }
 
-impl<A: Arena> Clone for Valid<'_, A>
-where
-    A::Generation: Dynamic,
-{
+impl<A: Arena> Clone for Valid<'_, A> {
     fn clone(&self) -> Self {
         Self::new(self.id)
     }
 }
 
-impl<A: Arena> Copy for Valid<'_, A> where A::Generation: Dynamic {}
+impl<A: Arena> Copy for Valid<'_, A> {}
+
+impl<A: Arena> Indexes<A> for Valid<'_, A> {
+    fn index(self) -> usize {
+        self.id.index.to_usize()
+    }
+
+    fn id(self) -> Id<A> {
+        self.id
+    }
+}
+
+impl<A: Arena> Indexes<A> for &Valid<'_, A> {
+    fn index(self) -> usize {
+        self.id.index.to_usize()
+    }
+
+    fn id(self) -> Id<A> {
+        self.id
+    }
+}
+
+#[derive(Debug)]
+pub struct ValidRef<'a, A: Arena> {
+    pub id: &'a Id<A>,
+}
+
+impl<'a, A: Arena> ValidRef<'a, A> {
+    pub(crate) fn new(id: &'a Id<A>) -> Self {
+        ValidRef {
+            id,
+        }
+    }
+}
+
+impl<A: Arena> Clone for ValidRef<'_, A> {
+    fn clone(&self) -> Self {
+        Self::new(self.id)
+    }
+}
+
+impl<A: Arena> Copy for ValidRef<'_, A> {}
+
+impl<A: Arena> Indexes<A> for ValidRef<'_, A> {
+    fn index(self) -> usize {
+        self.id.index.to_usize()
+    }
+
+    fn id(self) -> Id<A> {
+        *self.id
+    }
+}
+
+impl<A: Arena> Indexes<A> for &ValidRef<'_, A> {
+    fn index(self) -> usize {
+        self.id.index.to_usize()
+    }
+
+    fn id(self) -> Id<A> {
+        *self.id
+    }
+}

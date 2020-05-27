@@ -6,12 +6,6 @@ pub struct Id<A: Arena> {
     pub(crate) gen: A::Generation,
 }
 
-impl<A: Arena> Id<A> {
-    pub(crate) fn to_usize(self) -> usize {
-        self.index.to_usize()
-    }
-}
-
 impl<A: Arena> Hash for Id<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.index.hash(state);
@@ -37,3 +31,23 @@ impl<A: Arena> PartialEq for Id<A> {
 }
 
 impl<A: Arena> Eq for Id<A> {}
+
+impl<A: Arena<Generation=()>> Indexes<A> for Id<A> {
+    fn index(self) -> usize {
+        self.index.to_usize()
+    }
+
+    fn id(self) -> Id<A> {
+        self
+    }
+}
+
+impl<A: Arena<Generation=()>> Indexes<A> for &Id<A> {
+    fn index(self) -> usize {
+        self.index.to_usize()
+    }
+
+    fn id(self) -> Id<A> {
+        *self
+    }
+}

@@ -29,7 +29,7 @@ pub struct DynamicAllocator<A: Arena>
 where
     A::Generation: Dynamic,
 {
-    current_gen: Vec<A::Generation>,
+    current_gen: Vec<Id<A>>,
     dead: Vec<A::Index>,
     living: BitVec,
 }
@@ -58,32 +58,31 @@ impl<A: Arena<Generation = G>, G: Dynamic> DynamicAllocator<A> {
     fn reuse_index(&mut self, index: A::Index) -> Id<A> {
         let i = index.to_usize();
 
-        let gen = self.current_gen[i];
-
         self.living.set(i, true);
 
-        Id { index, gen }
+        self.current_gen[i]
     }
 
     fn create_new(&mut self) -> Id<A> {
         let index = self.current_gen.len();
+        let index = A::Index::from_usize(index);
 
         let gen = A::Generation::first_gen();
-        self.current_gen.push(gen);
+
+        let id = Id { index, gen };
+        self.current_gen.push(id);
 
         self.living.push(true);
 
-        let index = A::Index::from_usize(index);
-
-        Id { index, gen }
+        id
     }
 
     pub fn kill(&mut self, id: Id<A>) {
         if self.is_alive(id) {
-            let i = id.to_usize();
+            let i = id.index.to_usize();
 
-            if let Some(gen) = self.current_gen.get_mut(i) {
-                *gen = gen.next_gen();
+            if let Some(id) = self.current_gen.get_mut(i) {
+                id.gen = id.gen.next_gen();
             }
 
             self.dead.push(id.index);
@@ -92,8 +91,8 @@ impl<A: Arena<Generation = G>, G: Dynamic> DynamicAllocator<A> {
     }
 
     pub fn is_alive(&self, id: Id<A>) -> bool {
-        if let Some(gen) = self.current_gen.get(id.to_usize()) {
-            id.gen.eq(gen)
+        if let Some(alloc_id) = self.current_gen.get(id.index.to_usize()) {
+            id.gen.eq(&alloc_id.gen)
         } else {
             false
         }
@@ -101,6 +100,27 @@ impl<A: Arena<Generation = G>, G: Dynamic> DynamicAllocator<A> {
 
     pub fn living(&self) -> impl Iterator<Item = bool> + '_ {
         self.living.iter()
+    }
+
+    pub fn ids<'a>(&'a self) -> impl Iterator<Item = ValidRef<'a, A>> + 'a {
+        self.current_gen.iter()
+            .zip(self.living.iter())
+            .filter_map(|(id, live)| {
+                if live { Some(id) } else { None }
+            })
+            .map(|id| ValidRef::new(id))
+    }
+}
+
+impl<'a, A: Arena<Generation=G>, G: Dynamic> Validates<'a, A> for &'a DynamicAllocator<A> {
+    type Id = Valid<'a, A>;
+
+    fn validate(&self, id: Id<A>) -> Option<Self::Id> {
+        if self.is_alive(id) {
+            Some(Valid::new(id))
+        } else {
+            None
+        }
     }
 }
 

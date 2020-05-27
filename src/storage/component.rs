@@ -16,67 +16,19 @@ impl<A: Arena, T> Default for Component<A, T> {
     }
 }
 
-impl<A: Arena<Generation = ()>, T> Get<Id<A>, T> for Component<A, T> {
-    fn get(&self, id: Id<A>) -> &T {
-        self.get_unchecked(id)
+impl<A: Arena, T, I: Indexes<A>> Get<I, T> for Component<A, T> {
+    fn get(&self, id: I) -> &T {
+        self.get_index(id.index())
     }
 
-    fn get_mut(&mut self, id: Id<A>) -> &mut T {
-        self.get_mut_unchecked(id)
-    }
-}
-
-impl<A: Arena<Generation = ()>, T> Get<&Id<A>, T> for Component<A, T> {
-    fn get(&self, id: &Id<A>) -> &T {
-        self.get_unchecked(*id)
-    }
-
-    fn get_mut(&mut self, id: &Id<A>) -> &mut T {
-        self.get_mut_unchecked(*id)
+    fn get_mut(&mut self, id: I) -> &mut T {
+        self.get_index_mut(id.index())
     }
 }
 
-impl<A: Arena<Generation = G>, G: Dynamic, T> Get<Valid<'_, A>, T> for Component<A, T> {
-    fn get(&self, id: Valid<A>) -> &T {
-        self.get_unchecked(id.id)
-    }
-
-    fn get_mut(&mut self, id: Valid<A>) -> &mut T {
-        self.get_mut_unchecked(id.id)
-    }
-}
-
-impl<A: Arena<Generation = G>, G: Dynamic, T> Get<&Valid<'_, A>, T> for Component<A, T> {
-    fn get(&self, id: &Valid<A>) -> &T {
-        self.get_unchecked(id.id)
-    }
-
-    fn get_mut(&mut self, id: &Valid<A>) -> &mut T {
-        self.get_mut_unchecked(id.id)
-    }
-}
-
-impl<A: Arena<Generation = ()>, T> Insert<Id<A>, T> for Component<A, T> {
-    fn insert(&mut self, id: Id<A>, value: T) {
-        self.insert_unchecked(id, value);
-    }
-}
-
-impl<A: Arena<Generation = ()>, T> Insert<&Id<A>, T> for Component<A, T> {
-    fn insert(&mut self, id: &Id<A>, value: T) {
-        self.insert_unchecked(*id, value);
-    }
-}
-
-impl<A: Arena<Generation = G>, G: Dynamic, T> Insert<Valid<'_, A>, T> for Component<A, T> {
-    fn insert(&mut self, id: Valid<A>, value: T) {
-        self.insert_unchecked(id.id, value);
-    }
-}
-
-impl<A: Arena<Generation = G>, G: Dynamic, T> Insert<&Valid<'_, A>, T> for Component<A, T> {
-    fn insert(&mut self, id: &Valid<A>, value: T) {
-        self.insert_unchecked(id.id, value);
+impl<A: Arena, T, I: Indexes<A>> Insert<I, T> for Component<A, T> {
+    fn insert(&mut self, id: I, value: T) {
+        self.insert_index(id.index(), value);
     }
 }
 
@@ -93,27 +45,15 @@ impl<A: Arena, T> Component<A, T> {
         self.values.len()
     }
 
-    fn get_unchecked(&self, id: Id<A>) -> &T {
-        self.values.get(id.to_usize()).expect(&format!(
-            "{}: invalid id index ({:?})",
-            std::any::type_name::<Self>(),
-            id
-        ))
+    fn get_index(&self, id: usize) -> &T {
+        &self.values[id]
     }
 
-    fn get_mut_unchecked(&mut self, id: Id<A>) -> &mut T {
-        self.values.get_mut(id.to_usize()).expect(&format!(
-            "{}: invalid id index ({:?})",
-            std::any::type_name::<Self>(),
-            id
-        ))
+    fn get_index_mut(&mut self, id: usize) -> &mut T {
+        &mut self.values[id]
     }
 
-    fn insert_unchecked(&mut self, id: Id<A>, value: T) {
-        let index = id.to_usize();
-
-        debug_assert!(self.values.len() >= index);
-
+    fn insert_index(&mut self, index: usize, value: T) {
         if let Some(component) = self.values.get_mut(index) {
             *component = value;
         } else if self.values.len() == index {
@@ -134,6 +74,15 @@ mod tests {
         let id = Id { index: 0, gen: () };
 
         components.get(id);
+    }
+
+    #[test]
+    #[should_panic]
+    fn get_mut_at_invalid_index_panics() {
+        let mut components = Component::<FixedArena, u32>::default();
+        let id = Id { index: 0, gen: () };
+
+        components.get_mut(id);
     }
 
     #[test]

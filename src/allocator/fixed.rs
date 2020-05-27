@@ -13,6 +13,20 @@ impl<A: Arena<Generation = ()>> FixedAllocator<A> {
     }
 }
 
+impl<A: Arena<Generation = ()>> Validates<'_, A> for &FixedAllocator<A> {
+    type Id = Id<A>;
+    fn validate(&self, id: Id<A>) -> Option<Id<A>> {
+        Some(id)
+    }
+}
+
+impl<A: Arena<Generation = ()>> Validates<'_, A> for () {
+    type Id = Id<A>;
+    fn validate(&self, id: Id<A>) -> Option<Id<A>> {
+        Some(id)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

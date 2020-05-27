@@ -33,6 +33,17 @@ impl<A: Arena> DerefMut for Allocator<A> {
     }
 }
 
+impl<'a, A: Arena> Validates<'a, A> for &'a Allocator<A>
+where
+    &'a A::Allocator: Validates<'a, A>,
+{
+    type Id = <&'a A::Allocator as Validates<'a, A>>::Id;
+
+    fn validate(&self, id: Id<A>) -> Option<Self::Id> {
+        (&self.allocator).validate(id)
+    }
+}
+
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
