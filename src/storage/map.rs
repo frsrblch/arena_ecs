@@ -82,6 +82,11 @@ impl<'a, A: Arena, B: Arena> IdMap<A, B> {
     pub fn iter(&self) -> impl Iterator<Item = (&Id<A>, &Id<B>)> {
         self.values.iter()
     }
+
+    // TODO add remove trait to handle &Id<A> and Id<A>
+    pub fn remove(&mut self, id: Id<A>) -> Option<Id<B>> {
+        self.values.remove(&id)
+    }
 }
 
 impl<A: Arena, B: Arena> IdMap<A, B> {

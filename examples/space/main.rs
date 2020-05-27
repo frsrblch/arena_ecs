@@ -101,8 +101,6 @@ fn main() {
     let time = 3600.0;
     state.arenas.planet_orbit.update(&mut state.arenas.body, time);
     state.arenas.moon_orbit.update(&mut state.arenas.body, time);
-
-    dbg!(state.arenas.body.position);
 }
 
 #[test]

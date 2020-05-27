@@ -42,6 +42,11 @@ impl State {
         self.arenas.captain.ship.insert(captain, ship);
     }
 
+    pub fn uncaptained_ships<'a>(&'a self) -> impl Iterator<Item=ValidRef<'a, Ship>> + 'a {
+        self.allocators.ship.ids()
+            .filter(move |id| self.arenas.ship.captain.get(id).is_none())
+    }
+
     pub fn print_captained_ships(&mut self) {
         println!("Captained Ships:\n");
 
@@ -101,7 +106,7 @@ pub struct Ship {
     pub ship_type: Component<Self, ShipType>,
     pub tonnage: Component<Self, u32>,
 
-    pub captain: IdMap<Self, Captain>,
+    pub captain: IdMap<Self, Captain>, // Would be better as a Component, but IdMap was used for the sake of example
 }
 
 dynamic_arena!(Ship, u32, NonZeroU32);

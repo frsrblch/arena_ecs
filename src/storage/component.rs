@@ -1,5 +1,9 @@
 use crate::*;
 use std::marker::PhantomData;
+use std::slice::{Iter, IterMut};
+
+// TODO impl Index/IndexMut for Component
+// TODO Component::get() -> Option<&T>, add unwrap!() macro for early return in contexts that return ()
 
 #[derive(Debug)]
 pub struct Component<A: Arena, T> {
@@ -33,11 +37,11 @@ impl<A: Arena, T, I: Indexes<A>> Insert<I, T> for Component<A, T> {
 }
 
 impl<A: Arena, T> Component<A, T> {
-    pub fn iter(&self) -> impl Iterator<Item = &T> {
+    pub fn iter(&self) -> Iter<T> {
         self.values.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
+    pub fn iter_mut(&mut self) -> IterMut<T> {
         self.values.iter_mut()
     }
 
