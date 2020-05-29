@@ -1,5 +1,6 @@
 use arena_ecs::*;
 use rand::random;
+use std::fmt::Formatter;
 
 fn main() {
     let mut state = State::default();
@@ -47,15 +48,25 @@ impl State {
             .filter(move |id| self.arenas.ship.captain.get(id).is_none())
     }
 
+    pub fn shipless_captains<'a>(&'a self) -> impl Iterator<Item=ValidRef<'a, Captain>> + 'a {
+        self.allocators.captain.ids()
+            .filter(move |id| self.arenas.captain.ship.get(id).is_none())
+    }
+
     pub fn print_captained_ships(&mut self) {
+        let ship_alloc = &self.allocators.ship;
+        let captain_alloc = &self.allocators.captain;
+
+        let ship = &self.arenas.ship;
+        let captain = &self.arenas.captain;
+
         println!("Captained Ships:\n");
 
-        self.arenas.ship.captain
-            .iter()
-            .for_each(|(a, b)| {
-                if let (Some(a), Some(b)) = (self.allocators.ship.validate(a), self.allocators.captain.validate(b)) {
-                    self.arenas.ship.print(a);
-                    self.arenas.captain.print(b);
+        ship.captain.iter()
+            .for_each(|(s, c)| {
+                if let (Some(s), Some(c)) = (ship_alloc.validate(*s), captain_alloc.validate(*c)) {
+                    println!("{}", ship.entity(s));
+                    println!("{}", captain.entity(c));
                     println!();
                 }
             });
@@ -64,25 +75,27 @@ impl State {
     }
 
     pub fn print_uncaptained_ships(&mut self) {
+        let alloc = &self.allocators.ship;
+        let ship = &self.arenas.ship;
+
         println!("Uncaptained Ships:\n");
 
-        self.allocators.ship.ids()
-            .filter(|id| self.arenas.ship.captain.get(id).is_none())
-            .for_each(|id| {
-                self.arenas.ship.print(id);
-            });
+        alloc.ids()
+            .filter(|id| ship.captain.get(id).is_none())
+            .for_each(|id| println!("{}", ship.entity(id)));
 
         println!();
     }
 
     pub fn print_shipless_captains(&mut self) {
+        let alloc = &self.allocators.captain;
+        let captain = &self.arenas.captain;
+
         println!("Shipless Captains:\n");
 
-        self.allocators.captain.ids()
-            .filter(|id| self.arenas.captain.ship.get(id).is_none())
-            .for_each(|id| {
-                self.arenas.captain.print(id);
-            });
+        alloc.ids()
+            .filter(|id| captain.ship.get(id).is_none())
+            .for_each(|id| println!("{}", captain.entity(id)));
 
         println!();
     }
@@ -106,10 +119,15 @@ pub struct Ship {
     pub ship_type: Component<Self, ShipType>,
     pub tonnage: Component<Self, u32>,
 
-    pub captain: IdMap<Self, Captain>, // Would be better as a Component, but IdMap was used for the sake of example
+    // IdMap used for the sake of example
+    pub captain: IdMap<Self, Captain>,
 }
 
-dynamic_arena!(Ship, u32, NonZeroU32);
+impl Arena for Ship {
+    type Index = u32;
+    type Generation = NonZeroU32;
+    type Allocator = DynamicAllocator<Self>;
+}
 
 impl Ship {
     pub fn create(&mut self, allocator: &mut Allocator<Self>, row: ShipRow) -> Id<Self> {
@@ -121,9 +139,11 @@ impl Ship {
 
         id.id()
     }
+}
 
-    pub fn print(&self, id: impl Indexes<Self>) {
-        println!("{} - Type: {:?}, Tonnage: {}", self.name.get(id), self.ship_type.get(id), self.tonnage.get(id));
+impl DisplayEntity for Ship {
+    fn fmt_entity<I: Indexes<Self>>(&self, id: I, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} - {:?}, Tonnage: {}", self.name.get(id), self.ship_type.get(id), self.tonnage.get(id))
     }
 }
 
@@ -183,7 +203,11 @@ pub struct Captain {
     pub ship: IdMap<Self, Ship>,
 }
 
-dynamic_arena!(Captain, u32, NonZeroU32);
+impl Arena for Captain {
+    type Index = u32;
+    type Generation = NonZeroU32;
+    type Allocator = DynamicAllocator<Self>;
+}
 
 impl Captain {
     pub fn create(&mut self, allocator: &mut Allocator<Self>, row: CaptainRow) -> Id<Self> {
@@ -195,9 +219,11 @@ impl Captain {
 
         id.id()
     }
+}
 
-    pub fn print(&self, id: impl Indexes<Self>) {
-        println!("{} - Age: {}, Ability: {:?}", self.name.get(id), self.age.get(id), self.ability.get(id));
+impl DisplayEntity for Captain {
+    fn fmt_entity<I: Indexes<Self>>(&self, id: I, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} - Age: {}, Ability: {:?}", self.name.get(id), self.age.get(id), self.ability.get(id))
     }
 }
 
