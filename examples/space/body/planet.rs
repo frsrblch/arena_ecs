@@ -8,25 +8,24 @@ pub struct Planet {
     pub moons: Vec<Moon>,
 }
 
-impl CreateLinked<Planet> for State {
-    type Links = Id<System>;
-    type Id = PlanetIds;
+impl State {
+    pub fn create_planet(&mut self, planet: Planet, system: Id<System>) -> PlanetIds {
+        let body = self.allocators.body.create();
+        let orbit = self.allocators.planet_orbit.create();
 
-    fn create_linked(&mut self, planet: Planet, system: Id<System>) -> PlanetIds {
-        let body = self.create_linked(planet.body, system);
+        let surface = planet.surface.map(|surface| {
+            let id = self.allocators.surface.create();
+            self.arenas.surface.insert(id, surface, SurfaceLinks { body, system });
+            id
+        });
 
-        if let Some(surface) = planet.surface {
-            let links = SurfaceLinks { body, system };
-            let surface = self.create_linked(surface, links);
-            self.arenas.body.link_child(body, surface);
-        }
+        self.arenas.body.insert(body, planet.body, BodyLinks { system, orbit: Orbit::Planet(orbit), surface });
 
-        let _orbit = self.create_linked(planet.orbit, body);
+        self.arenas.planet_orbit.insert(orbit, planet.orbit, body);
 
-        let links = MoonLinks { system, parent: body };
         let moons = planet.moons
             .into_iter()
-            .map(|moon| self.create_linked(moon, links))
+            .map(|moon| self.create_moon(moon, MoonLinks { system, parent: body }))
             .collect();
 
         PlanetIds { body, moons }

@@ -20,6 +20,20 @@ impl<A: Arena, T> Default for Component<A, T> {
     }
 }
 
+impl<A: Arena, T, I: Indexes<A>> std::ops::Index<I> for Component<A, T> {
+    type Output = T;
+
+    fn index(&self, index: I) -> &Self::Output {
+        self.get_index(index.index())
+    }
+}
+
+impl<A: Arena, T, I: Indexes<A>> std::ops::IndexMut<I> for Component<A, T> {
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
+        self.get_index_mut(index.index())
+    }
+}
+
 impl<A: Arena, T, I: Indexes<A>> Get<I, T> for Component<A, T> {
     fn get(&self, id: I) -> &T {
         self.get_index(id.index())

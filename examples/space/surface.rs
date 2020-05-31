@@ -16,32 +16,18 @@ impl Arena for Surface {
 }
 
 impl Surface {
-    pub fn create(
+    pub fn insert(
         &mut self,
-        allocator: &mut Allocator<Self>,
+        id: Id<Self>,
         surface: SurfaceRow,
         links: SurfaceLinks,
-    ) -> Id<Surface> {
-        let id = allocator.create();
-
-        self.insert(id, surface);
-        self.link(id, links);
-        self.defaults(id);
-
-        id
-    }
-
-    fn insert(&mut self, id: Id<Self>, surface: SurfaceRow) {
+    ) {
         self.area.insert(id, surface.area);
         self.albedo.insert(id, surface.albedo);
-    }
 
-    fn link(&mut self, id: Id<Self>, links: SurfaceLinks) {
         self.system.insert(id, links.system);
         self.body.insert(id, links.body);
-    }
 
-    fn defaults(&mut self, id: Id<Self>) {
         self.temperature.insert(id, Default::default());
     }
 }
@@ -52,16 +38,7 @@ pub struct SurfaceRow {
     pub albedo: f64,
 }
 
-impl CreateLinked<SurfaceRow> for State {
-    type Links = SurfaceLinks;
-    type Id = Id<Surface>;
-
-    fn create_linked(&mut self, row: SurfaceRow, links: Self::Links) -> Id<Surface> {
-        self.arenas.surface.create(&mut self.allocators.surface, row, links)
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct SurfaceLinks {
     pub body: Id<Body>,
     pub system: Id<System>,

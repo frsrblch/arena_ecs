@@ -18,12 +18,10 @@ impl Government {
         government: GovernmentRow,
     ) -> Id<Self> {
         let id = allocator.create();
-        self.insert(id, government);
-        id.id
-    }
 
-    fn insert(&mut self, id: Valid<Self>, government: GovernmentRow) {
         self.name.insert(id, government.name);
+
+        id.id
     }
 }
 
@@ -32,12 +30,8 @@ pub struct GovernmentRow {
     pub name: String,
 }
 
-impl Create<GovernmentRow> for State {
-    type Id = Id<Government>;
-
-    fn create(&mut self, row: GovernmentRow) -> Self::Id {
-        self.arenas
-            .government
-            .create(&mut self.allocators.government, row)
+impl State {
+    pub fn create_government(&mut self, row: GovernmentRow) -> Id<Government> {
+        self.arenas.government.create(&mut self.allocators.government, row)
     }
 }

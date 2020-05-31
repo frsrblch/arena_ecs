@@ -29,23 +29,10 @@ impl PlanetOrbit {
             })
     }
 
-    pub fn create(&mut self, allocator: &mut Allocator<Self>, orbit: PlanetOrbitRow, body: Id<Body>) -> Id<Self> {
-        let id = allocator.create();
-
+    pub fn insert(&mut self, id: Id<PlanetOrbit>, orbit: PlanetOrbitRow, body: Id<Body>) {
         self.period.insert(id, orbit.period);
         self.radius.insert(id, orbit.radius);
         self.body.insert(id, body);
-
-        id
-    }
-}
-
-impl CreateLinked<PlanetOrbitRow> for State {
-    type Links = Id<Body>;
-    type Id = Id<PlanetOrbit>;
-
-    fn create_linked(&mut self, row: PlanetOrbitRow, links: Self::Links) -> Self::Id {
-        self.arenas.planet_orbit.create(&mut self.allocators.planet_orbit, row, links)
     }
 }
 
@@ -80,8 +67,6 @@ impl MoonOrbit {
                 let x = angle.cos() * radius;
                 let y = angle.sin() * radius;
 
-                println!("x: {}, y: {}", x, y);
-
                 let parent_position = *bodies.position.get(parent);
                 let position = bodies.position.get_mut(body);
 
@@ -89,25 +74,12 @@ impl MoonOrbit {
             })
     }
 
-    pub fn create(&mut self, allocator: &mut Allocator<Self>, orbit: MoonOrbitRow, links: MoonOrbitLinks) -> Id<Self> {
-        let id = allocator.create();
-
+    pub fn insert(&mut self, id: Id<Self>, orbit: MoonOrbitRow, links: MoonOrbitLinks) {
         self.period.insert(id, orbit.period);
         self.radius.insert(id, orbit.radius);
 
         self.body.insert(id, links.body);
         self.parent.insert(id, links.parent);
-
-        id
-    }
-}
-
-impl CreateLinked<MoonOrbitRow> for State {
-    type Links = MoonOrbitLinks;
-    type Id = Id<MoonOrbit>;
-
-    fn create_linked(&mut self, row: MoonOrbitRow, links: Self::Links) -> Self::Id {
-        self.arenas.moon_orbit.create(&mut self.allocators.moon_orbit, row, links)
     }
 }
 
@@ -117,6 +89,7 @@ pub struct MoonOrbitRow {
     pub radius: f64,
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct MoonOrbitLinks {
     pub body: Id<Body>,
     pub parent: Id<Body>,

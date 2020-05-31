@@ -24,25 +24,13 @@ impl Colony {
     ) -> Id<Self> {
         let id = allocator.create();
 
-        self.insert(id, colony);
-        self.link(id, links);
-        self.defaults(id);
-
-        id.id
-    }
-
-    fn insert(&mut self, id: Valid<Self>, colony: ColonyRow) {
         self.name.insert(id, colony.name);
         self.population.insert(id, colony.population);
-    }
-
-    fn link(&mut self, id: Valid<Self>, links: ColonyLinks) {
         self.body.insert(id, links.body);
         self.government.insert(id, links.government);
-    }
-
-    fn defaults(&mut self, id: Valid<Self>) {
         self.food.insert(id, Default::default());
+
+        id.id
     }
 }
 
@@ -52,17 +40,14 @@ pub struct ColonyRow {
     pub population: f64,
 }
 
-impl CreateLinked<ColonyRow> for State {
-    type Links = ColonyLinks;
-    type Id = Id<Colony>;
-
-    fn create_linked(&mut self, row: ColonyRow, links: Self::Links) -> Self::Id {
-        self.arenas.colony.create(&mut self.allocators.colony, row, links)
-    }
-}
-
 #[derive(Debug, Copy, Clone)]
 pub struct ColonyLinks {
     pub body: Id<Body>,
     pub government: Id<Government>,
+}
+
+impl State {
+    pub fn create_colony(&mut self, colony: ColonyRow, links: ColonyLinks) -> Id<Colony> {
+        self.arenas.colony.create(&mut self.allocators.colony, colony, links)
+    }
 }

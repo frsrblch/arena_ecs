@@ -37,10 +37,8 @@ pub struct SystemRow {
     pub mass: f64,
 }
 
-impl Create<SystemRow> for State {
-    type Id = Id<System>;
-
-    fn create(&mut self, value: SystemRow) -> Id<System> {
-        self.arenas.system.create(&mut self.allocators.system, value)
+impl State {
+    pub fn create_system(&mut self, system: SystemRow) -> Id<System> {
+        self.arenas.system.create(&mut self.allocators.system, system)
     }
 }

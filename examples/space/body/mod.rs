@@ -11,6 +11,7 @@ pub struct Body {
     pub name: Component<Self, String>,
     pub mass: Component<Self, f64>,
     pub radius: Component<Self, f64>,
+    pub orbit: Component<Self, Orbit>,
     pub position: Component<Self, (f64, f64)>,
 
     pub surface: IdMap<Self, Surface>,
@@ -23,39 +24,21 @@ impl Arena for Body {
 }
 
 impl Body {
-    pub fn create(
+    pub fn insert(
         &mut self,
-        allocator: &mut Allocator<Self>,
+        id: Id<Self>,
         body: BodyRow,
-        system: Id<System>,
-    ) -> Id<Self> {
-        let id = allocator.create();
-
-        self.insert(id, body);
-        self.link(id, system);
-        self.defaults(id);
-
-        id
-    }
-
-    fn insert(&mut self, id: Id<Self>, body: BodyRow) {
+        links: BodyLinks,
+    ) {
         self.name.insert(id, body.name);
         self.mass.insert(id, body.mass);
         self.radius.insert(id, body.radius);
-    }
 
-    fn link(&mut self, id: Id<Self>, system: Id<System>) {
-        self.system.insert(id, system);
-    }
+        self.system.insert(id, links.system);
+        self.orbit.insert(id, links.orbit);
+        if let Some(surface) = links.surface { self.surface.insert(id, surface); }
 
-    fn defaults(&mut self, id: Id<Self>) {
         self.position.insert(id, Default::default());
-    }
-}
-
-impl LinkChild<Surface> for Body {
-    fn link_child(&mut self, id: Id<Self>, surface: Id<Surface>) {
-        self.surface.insert(id, surface)
     }
 }
 
@@ -66,12 +49,15 @@ pub struct BodyRow {
     pub radius: f64,
 }
 
-impl CreateLinked<BodyRow> for State {
-    type Links = Id<System>;
-    type Id = Id<Body>;
-
-    fn create_linked(&mut self, value: BodyRow, system: Id<System>) -> Id<Body> {
-        self.arenas.body.create(&mut self.allocators.body, value, system)
-    }
+#[derive(Debug, Copy, Clone)]
+pub struct BodyLinks {
+    pub system: Id<System>,
+    pub orbit: Orbit,
+    pub surface: Option<Id<Surface>>,
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum Orbit {
+    Planet(Id<PlanetOrbit>),
+    Moon(Id<MoonOrbit>),
+}

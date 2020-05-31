@@ -7,20 +7,17 @@ pub struct Moon {
     pub orbit: MoonOrbitRow,
 }
 
-impl CreateLinked<Moon> for State {
-    type Links = MoonLinks;
-    type Id = Id<Body>;
-
-    fn create_linked(&mut self, row: Moon, links: MoonLinks) -> Self::Id {
+impl State {
+    pub fn create_moon(&mut self, row: Moon, links: MoonLinks) -> Id<Body> {
         let MoonLinks { system, parent } = links;
 
-        let body = self.create_linked(row.body, system);
+        let body = self.allocators.body.create();
+        let surface = self.allocators.surface.create();
+        let orbit = self.allocators.moon_orbit.create();
 
-        let surface_links = SurfaceLinks { system, body };
-        let surface = self.create_linked(row.surface, surface_links);
-        self.arenas.body.link_child(body, surface);
-
-        let _orbit = self.create_linked(row.orbit, MoonOrbitLinks { body, parent });
+        self.arenas.body.insert(body, row.body, BodyLinks { system, orbit: Orbit::Moon(orbit), surface: Some(surface)});
+        self.arenas.surface.insert(surface, row.surface, SurfaceLinks { system, body });
+        self.arenas.moon_orbit.insert(orbit, row.orbit, MoonOrbitLinks { body, parent });
 
         body
     }

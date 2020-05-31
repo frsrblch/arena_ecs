@@ -25,7 +25,7 @@ fn main() {
         mass: 1.989e30,
     };
 
-    let sol = state.create(sol);
+    let sol = state.create_system(sol);
 
     let earth = Planet {
         body: BodyRow {
@@ -58,13 +58,13 @@ fn main() {
         }],
     };
 
-    let earth = state.create_linked(earth, sol);
+    let earth = state.create_planet(earth, sol);
 
     let usa = GovernmentRow {
         name: "United States of America".to_string(),
     };
 
-    let usa_govt = state.create(usa);
+    let usa_govt = state.create_government(usa);
 
     let links = ColonyLinks {
         body: earth.body,
@@ -76,13 +76,13 @@ fn main() {
         population: 376e6,
     };
 
-    let _usa = state.create_linked(usa, links);
+    let _usa = state.create_colony(usa, links);
 
     let china = GovernmentRow {
         name: "People's Republic of China".to_string(),
     };
 
-    let china_govt = state.create(china);
+    let china_govt = state.create_government(china);
 
     let china = ColonyRow {
         name: "China".to_string(),
@@ -94,7 +94,7 @@ fn main() {
         government: china_govt,
     };
 
-    let _china = state.create_linked(china, links);
+    let _china = state.create_colony(china, links);
 
     state.print_with_government();
 
