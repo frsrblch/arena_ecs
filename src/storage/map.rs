@@ -14,7 +14,7 @@ impl<A: Arena, B: Arena> Default for IdMap<A, B> {
     }
 }
 
-impl<A: Arena, B: Arena, I: Indexes<A>> GetOpt<I, Id<B>> for IdMap<A, B> {
+impl<A: Arena, B: Arena, I: Indexes<A>> Get<I, Id<B>> for IdMap<A, B> {
     fn get(&self, id: I) -> Option<&Id<B>> {
         self.get_id(&id.id())
     }

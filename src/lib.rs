@@ -11,3 +11,14 @@ mod arena;
 mod ids;
 mod storage;
 mod traits;
+
+#[macro_export]
+macro_rules! unwrap_return {
+    ($e:expr) => {
+        if let Some(value) = $e {
+            value
+        } else {
+            return;
+        }
+    }
+}

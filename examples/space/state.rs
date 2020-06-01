@@ -15,7 +15,7 @@ impl State {
             .for_each(|(((colony, pop), govt_id), living)| {
                 if living {
                     if let Some(govt_id) = self.allocators.government.validate(govt_id) {
-                        let govt = self.arenas.government.name.get(govt_id);
+                        let govt = unwrap_return!(self.arenas.government.name.get(govt_id));
                         println!("{} ({}): {}", colony, govt, pop);
                     }
                 }

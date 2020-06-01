@@ -20,26 +20,12 @@ impl<A: Arena, T> Default for Component<A, T> {
     }
 }
 
-impl<A: Arena, T, I: Indexes<A>> std::ops::Index<I> for Component<A, T> {
-    type Output = T;
-
-    fn index(&self, index: I) -> &Self::Output {
-        self.get_index(index.index())
-    }
-}
-
-impl<A: Arena, T, I: Indexes<A>> std::ops::IndexMut<I> for Component<A, T> {
-    fn index_mut(&mut self, index: I) -> &mut Self::Output {
-        self.get_index_mut(index.index())
-    }
-}
-
 impl<A: Arena, T, I: Indexes<A>> Get<I, T> for Component<A, T> {
-    fn get(&self, id: I) -> &T {
+    fn get(&self, id: I) -> Option<&T> {
         self.get_index(id.index())
     }
 
-    fn get_mut(&mut self, id: I) -> &mut T {
+    fn get_mut(&mut self, id: I) -> Option<&mut T> {
         self.get_index_mut(id.index())
     }
 }
@@ -63,12 +49,12 @@ impl<A: Arena, T> Component<A, T> {
         self.values.len()
     }
 
-    fn get_index(&self, id: usize) -> &T {
-        &self.values[id]
+    fn get_index(&self, id: usize) -> Option<&T> {
+        self.values.get(id)
     }
 
-    fn get_index_mut(&mut self, id: usize) -> &mut T {
-        &mut self.values[id]
+    fn get_index_mut(&mut self, id: usize) -> Option<&mut T> {
+        self.values.get_mut(id)
     }
 
     fn insert_index(&mut self, index: usize, value: T) {
@@ -86,31 +72,13 @@ mod tests {
     use crate::test::FixedArena;
 
     #[test]
-    #[should_panic]
-    fn get_at_invalid_index_panics() {
-        let components = Component::<FixedArena, u32>::default();
-        let id = Id { index: 0, gen: () };
-
-        components.get(id);
-    }
-
-    #[test]
-    #[should_panic]
-    fn get_mut_at_invalid_index_panics() {
-        let mut components = Component::<FixedArena, u32>::default();
-        let id = Id { index: 0, gen: () };
-
-        components.get_mut(id);
-    }
-
-    #[test]
     fn get_at_valid_index() {
         let mut components = Component::<FixedArena, u32>::default();
         let id = Id { index: 0, gen: () };
 
         components.insert(id, 5);
 
-        assert_eq!(&5, components.get(id));
+        assert_eq!(Some(&5), components.get(id));
     }
 
     #[test]

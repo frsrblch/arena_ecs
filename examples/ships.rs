@@ -143,7 +143,11 @@ impl Ship {
 
 impl DisplayEntity for Ship {
     fn fmt_entity<I: Indexes<Self>>(&self, id: I, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} - {:?}, Tonnage: {}", self.name.get(id), self.ship_type.get(id), self.tonnage.get(id))
+        if let (Some(name), Some(ship), Some(tonnage)) = (self.name.get(id), self.ship_type.get(id), self.tonnage.get(id)) {
+            write!(f, "{} - {:?}, Tonnage: {}", name, ship, tonnage)
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -223,7 +227,11 @@ impl Captain {
 
 impl DisplayEntity for Captain {
     fn fmt_entity<I: Indexes<Self>>(&self, id: I, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} - Age: {}, Ability: {:?}", self.name.get(id), self.age.get(id), self.ability.get(id))
+        if let (Some(name), Some(age), Some(ability)) = (self.name.get(id), self.age.get(id), self.ability.get(id)) {
+            write!(f, "{} - Age: {}, Ability: {:?}", name, age, ability)
+        } else {
+            Ok(())
+        }
     }
 }
 

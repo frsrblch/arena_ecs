@@ -23,7 +23,7 @@ impl PlanetOrbit {
                 let x = angle.cos() * radius;
                 let y = angle.sin() * radius;
 
-                let position = bodies.position.get_mut(body);
+                let position = unwrap_return!(bodies.position.get_mut(body));
 
                 *position = (x, y);
             })
@@ -67,8 +67,8 @@ impl MoonOrbit {
                 let x = angle.cos() * radius;
                 let y = angle.sin() * radius;
 
-                let parent_position = *bodies.position.get(parent);
-                let position = bodies.position.get_mut(body);
+                let parent_position = *unwrap_return!(bodies.position.get(parent));
+                let position = unwrap_return!(bodies.position.get_mut(body));
 
                 *position = (x + parent_position.0, y + parent_position.1);
             })
