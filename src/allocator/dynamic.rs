@@ -102,11 +102,11 @@ impl<A: Arena<Generation = G>, G: Dynamic> DynamicAllocator<A> {
         self.living.iter()
     }
 
-    pub fn ids<'a>(&'a self) -> impl Iterator<Item = ValidRef<'a, A>> + 'a {
+    pub fn ids<'a>(&'a self) -> impl Iterator<Item = Valid1<'a, &Id<A>>> + 'a {
         self.current_gen.iter()
             .zip(self.living.iter())
             .filter(|(_id, live)| *live)
-            .map(|(id, _)| ValidRef::new(id))
+            .map(|(id, _)| Valid1::new(id))
     }
 }
 

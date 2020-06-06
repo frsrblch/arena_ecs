@@ -2,16 +2,12 @@ use arena_ecs::*;
 use state::*;
 use system::*;
 use body::*;
-use orbit::*;
-use surface::*;
 use government::*;
 use colony::*;
 
 mod state;
 mod system;
 mod body;
-mod orbit;
-mod surface;
 mod government;
 mod colony;
 
@@ -32,28 +28,22 @@ fn main() {
             name: "Earth".to_string(),
             mass: 5.972e24,
             radius: 6371e3,
-        },
-        surface: Some(SurfaceRow {
-            area: 510.1e6,
             albedo: 0.3,
-        }),
-        orbit: PlanetOrbitRow {
-            period: 365.25 * 24.0 * 60.0 * 60.0,
-            radius: 149.6e9,
+            orbit: OrbitParams {
+                period: 365.25 * 24.0 * 60.0 * 60.0,
+                radius: 149.6e9,
+                offset: 0.0
+            }
         },
-        moons: vec![Moon { 
-            body: BodyRow {
-                name: "Luna".to_string(),
-                mass: 7.348e22,
-                radius: 1737.1e3
-            },
-            surface: SurfaceRow {
-                area: 14.6e6,
-                albedo: 0.12
-            },
-            orbit: MoonOrbitRow {
+        moons: vec![BodyRow {
+            name: "Luna".to_string(),
+            mass: 7.348e22,
+            radius: 1737.1e3,
+            albedo: 0.12,
+            orbit: OrbitParams {
                 period: 27.322 * 24.0 * 60.0 * 60.0,
                 radius: 3.48e8,
+                offset: 0.0
             },
         }],
     };
@@ -99,8 +89,8 @@ fn main() {
     state.print_with_government();
 
     let time = 3600.0;
-    state.arenas.planet_orbit.update(&mut state.arenas.body, time);
-    state.arenas.moon_orbit.update(&mut state.arenas.body, time);
+
+    state.arenas.body.update_positions(time);
 }
 
 #[test]

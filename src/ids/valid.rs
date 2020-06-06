@@ -84,3 +84,54 @@ impl<A: Arena> Indexes<A> for &ValidRef<'_, A> {
         *self.id
     }
 }
+
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+pub struct Valid1<'a, T> {
+    id: T,
+    marker: PhantomData<&'a ()>,
+}
+
+impl<T> Valid1<'_, T> {
+    pub fn new(id: T) -> Self {
+        Self {
+            id,
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<A: Arena> Indexes<A> for Valid1<'_, Id<A>> {
+    fn index(self) -> usize {
+        self.id.index.to_usize()
+    }
+    fn id(self) -> Id<A> {
+        self.id
+    }    
+}
+
+impl<A: Arena> Indexes<A> for Valid1<'_, &Id<A>> {
+    fn index(self) -> usize {
+        self.id.index.to_usize()
+    }
+    fn id(self) -> Id<A> {
+        *self.id
+    }    
+}
+
+impl<A: Arena> Indexes<A> for &Valid1<'_, Id<A>> {
+    fn index(self) -> usize {
+        self.id.index.to_usize()
+    }
+    fn id(self) -> Id<A> {
+        self.id
+    }    
+}
+
+impl<A: Arena> Indexes<A> for &Valid1<'_, &Id<A>> {
+    fn index(self) -> usize {
+        self.id.index.to_usize()
+    }
+    fn id(self) -> Id<A> {
+        *self.id
+    }    
+}

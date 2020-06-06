@@ -31,11 +31,15 @@ pub struct State {
 
 impl State {
     pub fn create_ship(&mut self, ship: ShipRow) -> Id<Ship> {
-        self.arenas.ship.create(&mut self.allocators.ship, ship)
+        let id = self.allocators.ship.create();
+        self.arenas.ship.create(id, ship);
+        id.id()
     }
 
     pub fn create_captain(&mut self, captain: CaptainRow) -> Id<Captain> {
-        self.arenas.captain.create(&mut self.allocators.captain, captain)
+        let id = self.allocators.captain.create();
+        self.arenas.captain.create(id, captain);
+        id.id()
     }
 
     pub fn assign_captain(&mut self, ship: Id<Ship>, captain: Id<Captain>) {
@@ -43,12 +47,12 @@ impl State {
         self.arenas.captain.ship.insert(captain, ship);
     }
 
-    pub fn uncaptained_ships<'a>(&'a self) -> impl Iterator<Item=ValidRef<'a, Ship>> + 'a {
+    pub fn uncaptained_ships<'a>(&'a self) -> impl Iterator<Item=Valid1<'a, &Id<Ship>>> + 'a {
         self.allocators.ship.ids()
             .filter(move |id| self.arenas.ship.captain.get(id).is_none())
     }
 
-    pub fn shipless_captains<'a>(&'a self) -> impl Iterator<Item=ValidRef<'a, Captain>> + 'a {
+    pub fn shipless_captains<'a>(&'a self) -> impl Iterator<Item=Valid1<'a, &Id<Captain>>> + 'a {
         self.allocators.captain.ids()
             .filter(move |id| self.arenas.captain.ship.get(id).is_none())
     }
@@ -130,14 +134,10 @@ impl Arena for Ship {
 }
 
 impl Ship {
-    pub fn create(&mut self, allocator: &mut Allocator<Self>, row: ShipRow) -> Id<Self> {
-        let id = allocator.create();
-
+    pub fn create(&mut self, id: Valid<Self>, row: ShipRow) {
         self.name.insert(id, row.name);
         self.ship_type.insert(id, row.ship_type);
         self.tonnage.insert(id, row.tonnage);
-
-        id.id()
     }
 }
 
@@ -214,14 +214,10 @@ impl Arena for Captain {
 }
 
 impl Captain {
-    pub fn create(&mut self, allocator: &mut Allocator<Self>, row: CaptainRow) -> Id<Self> {
-        let id = allocator.create();
-
+    pub fn create(&mut self, id: impl Indexes<Self>, row: CaptainRow) {
         self.name.insert(id, row.name);
         self.age.insert(id, row.age);
         self.ability.insert(id, row.ability);
-
-        id.id()
     }
 }
 

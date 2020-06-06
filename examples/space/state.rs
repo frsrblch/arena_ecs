@@ -27,9 +27,6 @@ impl State {
 pub struct Arenas {
     pub system: System,
     pub body: Body,
-    pub planet_orbit: PlanetOrbit,
-    pub moon_orbit: MoonOrbit,
-    pub surface: Surface,
     pub colony: Colony,
     pub government: Government,
 }
@@ -38,9 +35,6 @@ pub struct Arenas {
 pub struct Allocators {
     pub system: Allocator<System>,
     pub body: Allocator<Body>,
-    pub planet_orbit: Allocator<PlanetOrbit>,
-    pub moon_orbit: Allocator<MoonOrbit>,
-    pub surface: Allocator<Surface>,
     pub colony: Allocator<Colony>,
     pub government: Allocator<Government>,
 }

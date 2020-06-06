@@ -26,39 +26,45 @@ impl<A: Arena, B: Arena, I: Indexes<A>> Get<I, Id<B>> for IdMap<A, B> {
 
 impl<A: Arena, B: Arena> Insert<Id<A>, Id<B>> for IdMap<A, B> {
     fn insert(&mut self, id: Id<A>, value: Id<B>) {
-        self.insert_id(id, value)
+        self.insert_id(id, value);
     }
 }
 
-impl<A: Arena, B: Arena> Insert<&Id<A>, Id<B>> for IdMap<A, B> {
-    fn insert(&mut self, id: &Id<A>, value: Id<B>) {
-        self.insert_id(*id, value)
-    }
-}
+// impl<A: Arena, B: Arena> Insert<Id<A>, Id<B>> for IdMap<A, B> {
+//     fn insert(&mut self, id: Id<A>, value: Id<B>) {
+//         self.insert_id(id, value)
+//     }
+// }
 
-impl<A: Arena, B: Arena> Insert<Valid<'_, A>, Id<B>> for IdMap<A, B> {
-    fn insert(&mut self, id: Valid<A>, value: Id<B>) {
-        self.insert_id(id.id(), value)
-    }
-}
+// impl<A: Arena, B: Arena> Insert<&Id<A>, Id<B>> for IdMap<A, B> {
+//     fn insert(&mut self, id: &Id<A>, value: Id<B>) {
+//         self.insert_id(*id, value)
+//     }
+// }
 
-impl<A: Arena, B: Arena> Insert<&Valid<'_, A>, Id<B>> for IdMap<A, B> {
-    fn insert(&mut self, id: &Valid<A>, value: Id<B>) {
-        self.insert_id(id.id(), value)
-    }
-}
+// impl<A: Arena, B: Arena> Insert<Valid<'_, A>, Id<B>> for IdMap<A, B> {
+//     fn insert(&mut self, id: Valid<A>, value: Id<B>) {
+//         self.insert_id(id.id(), value)
+//     }
+// }
 
-impl<A: Arena, B: Arena> Insert<ValidRef<'_, A>, Id<B>> for IdMap<A, B> {
-    fn insert(&mut self, id: ValidRef<A>, value: Id<B>) {
-        self.insert_id(id.id(), value)
-    }
-}
+// impl<A: Arena, B: Arena> Insert<&Valid<'_, A>, Id<B>> for IdMap<A, B> {
+//     fn insert(&mut self, id: &Valid<A>, value: Id<B>) {
+//         self.insert_id(id.id(), value)
+//     }
+// }
 
-impl<A: Arena, B: Arena> Insert<&ValidRef<'_, A>, Id<B>> for IdMap<A, B> {
-    fn insert(&mut self, id: &ValidRef<A>, value: Id<B>) {
-        self.insert_id(id.id(), value)
-    }
-}
+// impl<A: Arena, B: Arena> Insert<ValidRef<'_, A>, Id<B>> for IdMap<A, B> {
+//     fn insert(&mut self, id: ValidRef<A>, value: Id<B>) {
+//         self.insert_id(id.id(), value)
+//     }
+// }
+
+// impl<A: Arena, B: Arena> Insert<&ValidRef<'_, A>, Id<B>> for IdMap<A, B> {
+//     fn insert(&mut self, id: &ValidRef<A>, value: Id<B>) {
+//         self.insert_id(id.id(), value)
+//     }
+// }
 
 impl<'a, A: Arena, B: Arena> IdMap<A, B> {
     pub fn validate(&'a mut self, va: impl Validates<'a, A>, vb: impl Validates<'a, B>) -> ValidMap<'a, A, B> {
@@ -140,7 +146,7 @@ mod tests {
         let to_live = to_live.id();
 
         let to_kill = alloc_a.create();
-        map.insert(to_kill, alloc_b.create());
+        map.insert(to_kill.id(), alloc_b.create());
         let to_kill = to_kill.id();
 
         alloc_a.kill(to_kill);

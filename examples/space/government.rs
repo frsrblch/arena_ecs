@@ -12,16 +12,8 @@ impl Arena for Government {
 }
 
 impl Government {
-    pub fn create(
-        &mut self,
-        allocator: &mut Allocator<Self>,
-        government: GovernmentRow,
-    ) -> Id<Self> {
-        let id = allocator.create();
-
+    pub fn insert(&mut self, id: impl Indexes<Self>, government: GovernmentRow) {
         self.name.insert(id, government.name);
-
-        id.id
     }
 }
 
@@ -32,6 +24,8 @@ pub struct GovernmentRow {
 
 impl State {
     pub fn create_government(&mut self, row: GovernmentRow) -> Id<Government> {
-        self.arenas.government.create(&mut self.allocators.government, row)
+        let id = self.allocators.government.create();
+        self.arenas.government.insert(id, row);
+        id.id
     }
 }

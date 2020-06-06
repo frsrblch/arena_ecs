@@ -15,13 +15,7 @@ impl Arena for System {
 }
 
 impl System {
-    pub fn create(&mut self, allocator: &mut Allocator<Self>, system: SystemRow) -> Id<Self> {
-        let id = allocator.create();
-        self.insert(id, system);
-        id
-    }
-
-    fn insert(&mut self, id: Id<Self>, system: SystemRow) {
+    pub fn insert(&mut self, id: Id<Self>, system: SystemRow) {
         self.name.insert(id, system.name);
         self.radius.insert(id, system.radius);
         self.temperature.insert(id, system.temperature);
@@ -39,6 +33,8 @@ pub struct SystemRow {
 
 impl State {
     pub fn create_system(&mut self, system: SystemRow) -> Id<System> {
-        self.arenas.system.create(&mut self.allocators.system, system)
+        let id = self.allocators.system.create();
+        self.arenas.system.insert(id, system);
+        id
     }
 }
