@@ -1,11 +1,21 @@
 use super::*;
 
+impl State {
+    pub fn create_colony(&mut self, colony: ColonyRow, links: ColonyLinks) -> Id<Colony> {
+        let id = self.allocators.colony.create();
+        self.arenas.colony.insert(id, colony, links);
+        id.id
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct Colony {
     pub body: Component<Self, Id<Body>>,
     pub name: Component<Self, String>,
     pub population: Component<Self, f64>,
-    pub food: Component<Self, f64>,
+    pub food_stockpile: Component<Self, f64>,
+    pub food_production: Component<Self, f64>,
+    pub food_supply_demand: Component<Self, f64>,
     pub government: Component<Self, Id<Government>>,
 }
 
@@ -16,21 +26,21 @@ impl Arena for Colony {
 }
 
 impl Colony {
-    pub fn create(
+    pub fn insert(
         &mut self,
-        allocator: &mut Allocator<Self>,
+        id: impl Indexes<Self>,
         colony: ColonyRow,
         links: ColonyLinks,
-    ) -> Id<Self> {
-        let id = allocator.create();
-
+    ) {
         self.name.insert(id, colony.name);
         self.population.insert(id, colony.population);
+
         self.body.insert(id, links.body);
         self.government.insert(id, links.government);
-        self.food.insert(id, Default::default());
 
-        id.id
+        self.food_stockpile.insert(id, Default::default());
+        self.food_production.insert(id, Default::default());
+        self.food_supply_demand.insert(id, Default::default());
     }
 }
 
@@ -46,8 +56,15 @@ pub struct ColonyLinks {
     pub government: Id<Government>,
 }
 
-impl State {
-    pub fn create_colony(&mut self, colony: ColonyRow, links: ColonyLinks) -> Id<Colony> {
-        self.arenas.colony.create(&mut self.allocators.colony, colony, links)
+impl Colony {
+    pub fn update_food(&mut self) {
+        self.food_stockpile.iter_mut()
+            .zip(self.food_supply_demand.iter_mut())
+            .zip(self.food_production.iter())
+            .zip(self.population.iter())
+            .for_each(|(((stocks, supply_demand), production), pop)| {
+                *supply_demand = production - 2.0 * pop;
+                *stocks -= *supply_demand;
+            });
     }
 }

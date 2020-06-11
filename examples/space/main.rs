@@ -5,11 +5,11 @@ use body::*;
 use government::*;
 use colony::*;
 
-mod state;
-mod system;
-mod body;
-mod government;
-mod colony;
+pub mod state;
+pub mod system;
+pub mod body;
+pub mod government;
+pub mod colony;
 
 fn main() {
     let mut state = State::default();
