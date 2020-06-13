@@ -2,9 +2,6 @@ use crate::*;
 use std::marker::PhantomData;
 use std::slice::{Iter, IterMut};
 
-// TODO impl Index/IndexMut for Component
-// TODO Component::get() -> Option<&T>, add unwrap!() macro for early return in contexts that return ()
-
 #[derive(Debug)]
 pub struct Component<A: Arena, T> {
     values: Vec<T>,
@@ -17,22 +14,6 @@ impl<A: Arena, T> Default for Component<A, T> {
             values: vec![],
             marker: PhantomData,
         }
-    }
-}
-
-impl<A: Arena, T, I: Indexes<A>> Get<I, T> for Component<A, T> {
-    fn get(&self, id: I) -> Option<&T> {
-        self.get_index(id.index())
-    }
-
-    fn get_mut(&mut self, id: I) -> Option<&mut T> {
-        self.get_index_mut(id.index())
-    }
-}
-
-impl<A: Arena, T, I: Indexes<A>> Insert<I, T> for Component<A, T> {
-    fn insert(&mut self, id: I, value: T) {
-        self.insert_index(id.index(), value);
     }
 }
 
@@ -49,20 +30,32 @@ impl<A: Arena, T> Component<A, T> {
         self.values.len()
     }
 
-    fn get_index(&self, id: usize) -> Option<&T> {
-        self.values.get(id)
+    pub fn get<I: Indexes<A>>(&self, id: I) -> Option<&T> {
+        self.values.get(id.index())
     }
 
-    fn get_index_mut(&mut self, id: usize) -> Option<&mut T> {
-        self.values.get_mut(id)
+    pub fn get_mut<I: Indexes<A>>(&mut self, id: I) -> Option<&mut T> {
+        self.values.get_mut(id.index())
     }
 
-    fn insert_index(&mut self, index: usize, value: T) {
-        if let Some(component) = self.values.get_mut(index) {
+    pub fn insert<I: Indexes<A>>(&mut self, id: I, value: T) {
+        if let Some(component) = self.get_mut(id) {
             *component = value;
-        } else if self.values.len() == index {
+        } else if self.len() == id.index() {
             self.values.push(value);
         }
+    }
+}
+
+impl<A: Arena, T> Component<A, Option<T>> {
+    pub fn get_opt<I: Indexes<A>>(&self, id: I) -> Option<&T> {
+        self.get(id)
+            .and_then(|v| v.as_ref())
+    }
+
+    pub fn get_opt_mut<I: Indexes<A>>(&mut self, id: I) -> Option<&mut T> {
+        self.get_mut(id)
+            .and_then(|v| v.as_mut())
     }
 }
 

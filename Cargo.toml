@@ -17,6 +17,3 @@ bit-vec = "0.6.2"
 
 [[example]]
 name = "space"
-
-[[example]]
-name = "ships"
