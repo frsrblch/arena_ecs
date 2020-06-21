@@ -17,7 +17,7 @@ impl<A: Arena, T> Default for Component<A, T> {
     }
 }
 
-impl<A: Arena, T> Component<A, T> {
+impl<A: Arena, T: std::fmt::Debug> Component<A, T> {
     pub fn iter(&self) -> Iter<T> {
         self.values.iter()
     }
@@ -30,34 +30,46 @@ impl<A: Arena, T> Component<A, T> {
         self.values.len()
     }
 
-    pub fn get<I: Indexes<A>>(&self, id: I) -> Option<&T> {
-        self.values.get(id.index())
+    pub fn get<I: Indexes<A>>(&self, id: I) -> &T {
+        self.get_index(id.index())
+            .expect(&format!("Invalid index: {:?}", std::any::type_name::<Self>()))
     }
 
-    pub fn get_mut<I: Indexes<A>>(&mut self, id: I) -> Option<&mut T> {
-        self.values.get_mut(id.index())
+    fn get_index(&self, index: usize) -> Option<&T> {
+        self.values.get(index)
+    }
+
+    pub fn get_mut<I: Indexes<A>>(&mut self, id: I) -> &mut T {
+        self.get_index_mut(id.index())
+            .expect(&format!("Invalid index: {:?}", std::any::type_name::<Self>()))
+    }
+
+    fn get_index_mut(&mut self, index: usize) -> Option<&mut T> {
+        self.values.get_mut(index)
     }
 
     pub fn insert<I: Indexes<A>>(&mut self, id: I, value: T) {
-        if let Some(component) = self.get_mut(id) {
+        if let Some(component) = self.get_index_mut(id.index()) {
             *component = value;
         } else if self.len() == id.index() {
             self.values.push(value);
+        } else {
+            panic!("Invalid index: {:?}", std::any::type_name::<Self>());
         }
     }
 }
 
-impl<A: Arena, T> Component<A, Option<T>> {
-    pub fn get_opt<I: Indexes<A>>(&self, id: I) -> Option<&T> {
-        self.get(id)
-            .and_then(|v| v.as_ref())
-    }
-
-    pub fn get_opt_mut<I: Indexes<A>>(&mut self, id: I) -> Option<&mut T> {
-        self.get_mut(id)
-            .and_then(|v| v.as_mut())
-    }
-}
+// impl<A: Arena, T> Component<A, Option<T>> {
+//     pub fn get_opt<I: Indexes<A>>(&self, id: I) -> Option<&T> {
+//         self.get(id)
+//             .and_then(|v| v.as_ref())
+//     }
+//
+//     pub fn get_opt_mut<I: Indexes<A>>(&mut self, id: I) -> Option<&mut T> {
+//         self.get_mut(id)
+//             .and_then(|v| v.as_mut())
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
@@ -71,7 +83,7 @@ mod tests {
 
         components.insert(id, 5);
 
-        assert_eq!(Some(&5), components.get(id));
+        assert_eq!(&5, components.get(id));
     }
 
     #[test]

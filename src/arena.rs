@@ -26,6 +26,12 @@ macro_rules! fixed_arena {
 
 #[macro_export]
 macro_rules! dynamic_arena {
+    ($arena:ty, $index:ty) => {
+        paste::item! {
+            dynamic_arena!($arena, $index, [<NonZero $index:camel>]);
+        }
+    };
+
     ($arena:ty, $index:ty, $gen:ty) => {
         impl Arena for $arena {
             type Index = $index;

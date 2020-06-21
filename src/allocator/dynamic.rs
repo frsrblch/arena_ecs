@@ -1,5 +1,6 @@
 use crate::*;
 use bit_vec::BitVec;
+use std::fmt::Debug;
 
 pub trait Validate<ID, A: Arena>
 where
@@ -21,6 +22,18 @@ impl<A: Arena<Generation = G>, G: Dynamic> Validate<Id<A>, A> for DynamicAllocat
 impl<A: Arena<Generation = G>, G: Dynamic> Validate<&Id<A>, A> for DynamicAllocator<A> {
     fn validate(&self, id: &Id<A>) -> Option<Valid<'_, A>> {
         self.validate(*id)
+    }
+}
+
+impl<A: Arena<Generation = G>, G: Dynamic> Validate<Option<Id<A>>, A> for DynamicAllocator<A> {
+    fn validate(&self, id: Option<Id<A>>) -> Option<Valid<'_, A>> {
+        id.and_then(|id| self.validate(id))
+    }
+}
+
+impl<A: Arena<Generation = G>, G: Dynamic> Validate<&Option<Id<A>>, A> for DynamicAllocator<A> {
+    fn validate(&self, id: &Option<Id<A>>) -> Option<Valid<'_, A>> {
+        id.and_then(|id| self.validate(id))
     }
 }
 
@@ -102,11 +115,34 @@ impl<A: Arena<Generation = G>, G: Dynamic> DynamicAllocator<A> {
         self.living.iter()
     }
 
-    pub fn ids<'a>(&'a self) -> impl Iterator<Item = Valid1<'a, &Id<A>>> + 'a {
+    pub fn ids<'a>(&'a self) -> impl Iterator<Item = ValidRef<'a, A>> + 'a {
         self.current_gen.iter()
+            .map(ValidRef::new)
             .zip(self.living.iter())
-            .filter(|(_id, live)| *live)
-            .map(|(id, _)| Valid1::new(id))
+            .filter_map(|(id, live)| {
+                if live {
+                    Some(id)
+                } else {
+                    None
+                }
+            })
+    }
+
+    pub fn zip_id_and_filter<I: Iterator<Item=T>, T>(&self, iter: I) -> impl Iterator<Item=(T, Valid<A>)> {
+        let valid_ids = self.current_gen
+            .iter()
+            .copied()
+            .map(Valid::new);
+
+        iter.zip(valid_ids)
+            .zip(self.living.iter())
+            .filter_map(|((t, id), live)| {
+                if live {
+                    Some((t, id))
+                } else {
+                    None
+                }
+            })
     }
 }
 
