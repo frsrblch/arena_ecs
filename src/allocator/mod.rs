@@ -1,5 +1,5 @@
 use crate::*;
-pub use dynamic::*;
+pub use dynamic::DynamicAllocator;
 pub use fixed::FixedAllocator;
 use std::ops::{Deref, DerefMut};
 
@@ -33,14 +33,12 @@ impl<A: Arena> DerefMut for Allocator<A> {
     }
 }
 
-impl<'a, A: Arena> Validates<'a, A> for &'a Allocator<A>
-where
-    &'a A::Allocator: Validates<'a, A>,
+impl<'a, A: Arena, ID> Validates<ID, A> for Allocator<A>
+    where
+        A::Allocator: Validates<ID, A>,
 {
-    type Id = <&'a A::Allocator as Validates<'a, A>>::Id;
-
-    fn validate(&self, id: Id<A>) -> Option<Self::Id> {
-        (&self.allocator).validate(id)
+    fn validate(&self, id: ID) -> Option<Valid<A>> {
+        self.allocator.validate(id)
     }
 }
 
@@ -52,22 +50,16 @@ pub(crate) mod test {
     #[derive(Debug, Default)]
     pub(crate) struct FixedArena;
 
-    fixed_arena!(FixedArena, u8);
+    fixed_arena!(FixedArena);
 
     #[derive(Debug, Default)]
     pub(crate) struct GenerationalArena;
 
-    dynamic_arena!(GenerationalArena, u8, NonZeroU8);
+    dynamic_arena!(GenerationalArena);
 
     #[test]
     fn allocator_size() {
-        assert_eq!(1, size_of::<Allocator<FixedArena>>());
+        assert_eq!(4, size_of::<Allocator<FixedArena>>());
         assert_eq!(80, size_of::<Allocator<GenerationalArena>>());
-    }
-
-    #[test]
-    fn id_size() {
-        assert_eq!(1, size_of::<Id<FixedArena>>());
-        assert_eq!(2, size_of::<Id<GenerationalArena>>());
     }
 }

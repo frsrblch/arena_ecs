@@ -2,15 +2,8 @@ use crate::*;
 use bit_vec::BitVec;
 use std::fmt::Debug;
 
-pub trait Validate<ID, A: Arena>
-where
-    A::Generation: Dynamic,
-{
-    fn validate(&self, id: ID) -> Option<Valid<A>>;
-}
-
-impl<A: Arena<Generation = G>, G: Dynamic> Validate<Id<A>, A> for DynamicAllocator<A> {
-    fn validate(&self, id: Id<A>) -> Option<Valid<'_, A>> {
+impl<'a, A> Validates<Id<A>, A> for DynamicAllocator<A> {
+    fn validate(&self, id: Id<A>) -> Option<Valid<A>> {
         if self.is_alive(id) {
             Some(Valid::new(id))
         } else {
@@ -19,35 +12,32 @@ impl<A: Arena<Generation = G>, G: Dynamic> Validate<Id<A>, A> for DynamicAllocat
     }
 }
 
-impl<A: Arena<Generation = G>, G: Dynamic> Validate<&Id<A>, A> for DynamicAllocator<A> {
-    fn validate(&self, id: &Id<A>) -> Option<Valid<'_, A>> {
+impl<'a, A> Validates<&Id<A>, A> for DynamicAllocator<A> {
+    fn validate(&self, id: &Id<A>) -> Option<Valid<A>> {
         self.validate(*id)
     }
 }
 
-impl<A: Arena<Generation = G>, G: Dynamic> Validate<Option<Id<A>>, A> for DynamicAllocator<A> {
-    fn validate(&self, id: Option<Id<A>>) -> Option<Valid<'_, A>> {
+impl<'a, A> Validates<Option<Id<A>>, A> for DynamicAllocator<A> {
+    fn validate(&self, id: Option<Id<A>>) -> Option<Valid<A>> {
         id.and_then(|id| self.validate(id))
     }
 }
 
-impl<A: Arena<Generation = G>, G: Dynamic> Validate<&Option<Id<A>>, A> for DynamicAllocator<A> {
-    fn validate(&self, id: &Option<Id<A>>) -> Option<Valid<'_, A>> {
+impl<'a, A> Validates<&Option<Id<A>>, A> for DynamicAllocator<A> {
+    fn validate(&self, id: &Option<Id<A>>) -> Option<Valid<A>> {
         id.and_then(|id| self.validate(id))
     }
 }
 
 #[derive(Debug)]
-pub struct DynamicAllocator<A: Arena>
-where
-    A::Generation: Dynamic,
-{
+pub struct DynamicAllocator<A> {
     current_gen: Vec<Id<A>>,
-    dead: Vec<A::Index>,
+    dead: Vec<u32>,
     living: BitVec,
 }
 
-impl<A: Arena<Generation = G>, G: Dynamic> Default for DynamicAllocator<A> {
+impl<A> Default for DynamicAllocator<A> {
     fn default() -> Self {
         Self {
             current_gen: vec![],
@@ -57,7 +47,7 @@ impl<A: Arena<Generation = G>, G: Dynamic> Default for DynamicAllocator<A> {
     }
 }
 
-impl<A: Arena<Generation = G>, G: Dynamic> DynamicAllocator<A> {
+impl<A> DynamicAllocator<A> {
     pub fn create(&mut self) -> Valid<A> {
         let id = if let Some(index) = self.dead.pop() {
             self.reuse_index(index)
@@ -68,8 +58,8 @@ impl<A: Arena<Generation = G>, G: Dynamic> DynamicAllocator<A> {
         Valid::new(id)
     }
 
-    fn reuse_index(&mut self, index: A::Index) -> Id<A> {
-        let i = index.to_usize();
+    fn reuse_index(&mut self, index: u32) -> Id<A> {
+        let i = index as usize;
 
         self.living.set(i, true);
 
@@ -77,14 +67,11 @@ impl<A: Arena<Generation = G>, G: Dynamic> DynamicAllocator<A> {
     }
 
     fn create_new(&mut self) -> Id<A> {
-        let index = self.current_gen.len();
-        let index = A::Index::from_usize(index);
+        let index = self.current_gen.len() as u32;
 
-        let gen = A::Generation::first_gen();
+        let id = Id::first(index);
 
-        let id = Id { index, gen };
         self.current_gen.push(id);
-
         self.living.push(true);
 
         id
@@ -92,22 +79,23 @@ impl<A: Arena<Generation = G>, G: Dynamic> DynamicAllocator<A> {
 
     pub fn kill(&mut self, id: Id<A>) {
         if self.is_alive(id) {
-            let i = id.index.to_usize();
+            let index = id.get_u32();
+            let i = index as usize;
 
-            if let Some(id) = self.current_gen.get_mut(i) {
-                id.gen = id.gen.next_gen();
+            if let Some(current_id) = self.current_gen.get_mut(i) {
+                *current_id = current_id.next_gen();
             }
 
-            self.dead.push(id.index);
+            self.dead.push(index);
             self.living.set(i, false);
         }
     }
 
     pub fn is_alive(&self, id: Id<A>) -> bool {
-        if let Some(alloc_id) = self.current_gen.get(id.index.to_usize()) {
-            id.gen.eq(&alloc_id.gen)
+        if let Some(current_id) = self.current_gen.get(id.get_index()) {
+            id.eq(&current_id)
         } else {
-            false
+            panic!("{}: Invalid id", std::any::type_name::<Self>())
         }
     }
 
@@ -115,48 +103,35 @@ impl<A: Arena<Generation = G>, G: Dynamic> DynamicAllocator<A> {
         self.living.iter()
     }
 
-    pub fn ids<'a>(&'a self) -> impl Iterator<Item = ValidRef<'a, A>> + 'a {
+    pub fn ids(&self) -> impl Iterator<Item = Option<ValidRef<A>>> {
         self.current_gen.iter()
-            .map(ValidRef::new)
             .zip(self.living.iter())
-            .filter_map(|(id, live)| {
+            .map(|(id, live)| {
                 if live {
-                    Some(id)
+                    Some(ValidRef::new(id))
                 } else {
                     None
                 }
             })
     }
 
-    pub fn zip_id_and_filter<I: Iterator<Item=T>, T>(&self, iter: I) -> impl Iterator<Item=(T, Valid<A>)> {
-        let valid_ids = self.current_gen
-            .iter()
-            .copied()
-            .map(Valid::new);
-
-        iter.zip(valid_ids)
-            .zip(self.living.iter())
-            .filter_map(|((t, id), live)| {
-                if live {
-                    Some((t, id))
-                } else {
-                    None
-                }
+    pub fn zip_id_and_filter<I: Iterator<Item=T>, T>(&self, iter: I) -> impl Iterator<Item=(T, ValidRef<A>)> {
+        iter.zip(self.ids())
+            .filter_map(|(t, id)| {
+                id.map(|id| (t, id))
             })
     }
 }
 
-impl<'a, A: Arena<Generation=G>, G: Dynamic> Validates<'a, A> for &'a DynamicAllocator<A> {
-    type Id = Valid<'a, A>;
-
-    fn validate(&self, id: Id<A>) -> Option<Self::Id> {
-        if self.is_alive(id) {
-            Some(Valid::new(id))
-        } else {
-            None
-        }
-    }
-}
+// impl<'a, A> Validates<'a, A> for &'a DynamicAllocator<A> {
+//     fn validate(&self, id: Id<A>) -> Option<Valid<'a, A>> {
+//         if self.is_alive(id) {
+//             Some(Valid::new(id))
+//         } else {
+//             None
+//         }
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
@@ -164,50 +139,15 @@ mod tests {
     use crate::allocator::test::GenerationalArena;
 
     #[test]
-    #[should_panic]
-    fn allocator_panic_when_index_out_of_range() {
-        let mut allocator = Allocator::<GenerationalArena>::default();
-        for _ in 0..257 {
-            let _id = allocator.create();
-        }
-    }
-
-    #[test]
-    fn create_fixed() {
-        let mut fixed_allocator = Allocator::<GenerationalArena>::default();
-
-        assert_eq!(
-            Id {
-                index: 0,
-                gen: NonZeroU8::first_gen()
-            },
-            fixed_allocator.create().id
-        );
-        assert_eq!(
-            Id {
-                index: 1,
-                gen: NonZeroU8::first_gen()
-            },
-            fixed_allocator.create().id
-        );
-    }
-
-    #[test]
     fn create_generational() {
         let mut gen_allocator = Allocator::<GenerationalArena>::default();
 
         assert_eq!(
-            Id {
-                index: 0,
-                gen: NonZeroU8::first_gen()
-            },
+            Id::first(0),
             gen_allocator.create().id
         );
         assert_eq!(
-            Id {
-                index: 1,
-                gen: NonZeroU8::first_gen()
-            },
+            Id::first(1),
             gen_allocator.create().id
         );
     }
@@ -219,18 +159,13 @@ mod tests {
         let id1 = gen_allocator.create().id;
         gen_allocator.kill(id1);
 
+        let reused_id = Id::first(0).next_gen();
         assert_eq!(
-            Id {
-                index: 0,
-                gen: NonZeroU8::first_gen().next_gen()
-            },
+            reused_id,
             gen_allocator.create().id
         );
         assert_eq!(
-            Id {
-                index: 1,
-                gen: NonZeroU8::first_gen()
-            },
+            Id::first(1),
             gen_allocator.create().id
         );
     }
