@@ -118,6 +118,46 @@ impl<A: Arena<Allocator = FixedAllocator<A>>> Indexes<A> for &Id<A> {
     }
 }
 
+impl<A: Arena<Allocator = DynamicAllocator<A>>> TryIndexes<A> for Id<A> {
+    fn index(&self) -> Option<usize> {
+        Some(self.get_index())
+    }
+
+    fn id(&self) -> Option<Id<A>> {
+        Some(*self)
+    }
+}
+
+impl<A: Arena<Allocator = DynamicAllocator<A>>> TryIndexes<A> for &Id<A> {
+    fn index(&self) -> Option<usize> {
+        Some(self.get_index())
+    }
+
+    fn id(&self) -> Option<Id<A>> {
+        Some(**self)
+    }
+}
+
+impl<A> TryIndexes<A> for Option<Id<A>> {
+    fn index(&self) -> Option<usize> {
+        self.map(|id| id.get_index())
+    }
+
+    fn id(&self) -> Option<Id<A>> {
+        *self
+    }
+}
+
+impl<A> TryIndexes<A> for &Option<Id<A>> {
+    fn index(&self) -> Option<usize> {
+        self.map(|id| id.get_index())
+    }
+
+    fn id(&self) -> Option<Id<A>> {
+        **self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,7 +1,7 @@
 use crate::*;
 use std::marker::PhantomData;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct FixedAllocator<A> {
     next_index: u32,
     marker: PhantomData<A>,
@@ -12,6 +12,15 @@ impl<A> FixedAllocator<A> {
         let index = self.next_index;
         self.next_index += 1;
         Id::first(index)
+    }
+}
+
+impl<A> Default for FixedAllocator<A> {
+    fn default() -> Self {
+        Self {
+            next_index: 0,
+            marker: PhantomData,
+        }
     }
 }
 

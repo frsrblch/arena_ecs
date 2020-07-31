@@ -5,6 +5,7 @@ pub trait Indexes<A> {
     fn id(&self) -> Id<A>;
 }
 
-pub trait Validates<ID, A> {
-    fn validate(&self, id: ID) -> Option<Valid<A>>;
+pub trait TryIndexes<A> {
+    fn index(&self) -> Option<usize>;
+    fn id(&self) -> Option<Id<A>>;
 }

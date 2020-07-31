@@ -1,9 +1,8 @@
 use crate::*;
-use std::fmt::Debug;
 use std::fmt::{Result, Display, Formatter};
 
-pub trait Arena: Debug + Default {
-    type Allocator: Debug + Default;
+pub trait Arena {
+    type Allocator;
 }
 
 #[macro_export]

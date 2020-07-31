@@ -11,10 +11,10 @@ pub struct Allocator<A: Arena> {
     allocator: A::Allocator,
 }
 
-impl<A: Arena> Default for Allocator<A> {
+impl<A: Arena<Allocator=ALLOCATOR>, ALLOCATOR: Default> Default for Allocator<A> {
     fn default() -> Self {
         Self {
-            allocator: A::Allocator::default(),
+            allocator: ALLOCATOR::default(),
         }
     }
 }
@@ -30,15 +30,6 @@ impl<A: Arena> Deref for Allocator<A> {
 impl<A: Arena> DerefMut for Allocator<A> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.allocator
-    }
-}
-
-impl<'a, A: Arena, ID> Validates<ID, A> for Allocator<A>
-    where
-        A::Allocator: Validates<ID, A>,
-{
-    fn validate(&self, id: ID) -> Option<Valid<A>> {
-        self.allocator.validate(id)
     }
 }
 

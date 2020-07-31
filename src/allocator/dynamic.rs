@@ -1,32 +1,15 @@
 use crate::*;
 use bit_vec::BitVec;
-use std::fmt::Debug;
 
-impl<'a, A> Validates<Id<A>, A> for DynamicAllocator<A> {
-    fn validate(&self, id: Id<A>) -> Option<Valid<A>> {
+impl<A> DynamicAllocator<A> {
+    pub fn validate(&self, id: impl TryIndexes<A>) -> Option<Valid<A>> {
+        let id = id.id()?;
+
         if self.is_alive(id) {
             Some(Valid::new(id))
         } else {
             None
         }
-    }
-}
-
-impl<'a, A> Validates<&Id<A>, A> for DynamicAllocator<A> {
-    fn validate(&self, id: &Id<A>) -> Option<Valid<A>> {
-        self.validate(*id)
-    }
-}
-
-impl<'a, A> Validates<Option<Id<A>>, A> for DynamicAllocator<A> {
-    fn validate(&self, id: Option<Id<A>>) -> Option<Valid<A>> {
-        id.and_then(|id| self.validate(id))
-    }
-}
-
-impl<'a, A> Validates<&Option<Id<A>>, A> for DynamicAllocator<A> {
-    fn validate(&self, id: &Option<Id<A>>) -> Option<Valid<A>> {
-        id.and_then(|id| self.validate(id))
     }
 }
 
@@ -122,16 +105,6 @@ impl<A> DynamicAllocator<A> {
             })
     }
 }
-
-// impl<'a, A> Validates<'a, A> for &'a DynamicAllocator<A> {
-//     fn validate(&self, id: Id<A>) -> Option<Valid<'a, A>> {
-//         if self.is_alive(id) {
-//             Some(Valid::new(id))
-//         } else {
-//             None
-//         }
-//     }
-// }
 
 #[cfg(test)]
 mod tests {
