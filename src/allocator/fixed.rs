@@ -13,6 +13,12 @@ impl<A> FixedAllocator<A> {
         self.next_index += 1;
         Id::first(index)
     }
+
+    pub fn ids(&self) -> impl Iterator<Item = Id<A>> {
+        (0..self.next_index)
+            .into_iter()
+            .map(Id::first)
+    }
 }
 
 impl<A> Default for FixedAllocator<A> {
