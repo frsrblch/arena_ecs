@@ -31,25 +31,25 @@ impl<A, T: std::fmt::Debug> Component<A, T> {
     }
 
     pub fn get<I: Indexes<A>>(&self, id: I) -> &T {
-        self.get_index(id.index())
-            .expect(&format!("Invalid index: {:?}", std::any::type_name::<Self>()))
-    }
+        assert!(
+            id.index() < self.values.len(),
+            format!("Invalid index: {:?}", std::any::type_name::<Self>())
+        );
 
-    fn get_index(&self, index: usize) -> Option<&T> {
-        self.values.get(index)
+        self.values.get(id.index()).unwrap()
     }
 
     pub fn get_mut<I: Indexes<A>>(&mut self, id: I) -> &mut T {
-        self.get_index_mut(id.index())
-            .expect(&format!("Invalid index: {:?}", std::any::type_name::<Self>()))
-    }
+        assert!(
+            id.index() < self.values.len(),
+            format!("Invalid index: {:?}", std::any::type_name::<Self>())
+        );
 
-    fn get_index_mut(&mut self, index: usize) -> Option<&mut T> {
-        self.values.get_mut(index)
+        self.values.get_mut(id.index()).unwrap()
     }
 
     pub fn insert<I: Indexes<A>>(&mut self, id: I, value: T) {
-        if let Some(component) = self.get_index_mut(id.index()) {
+        if let Some(component) = self.values.get_mut(id.index()) {
             *component = value;
         } else if self.len() == id.index() {
             self.values.push(value);

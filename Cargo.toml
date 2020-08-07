@@ -4,14 +4,16 @@ version = "0.1.0"
 authors = ["Fraser Balch <farseer.ulwithy@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-panic = "abort"
-
 [dev-dependencies]
 rand = "0.7.3"
+criterion = "0.3"
 
 [dependencies]
 bit-vec = "0.6.2"
 
 [[example]]
 name = "space"
+
+[[bench]]
+name = "bench"
+harness = false
