@@ -17,7 +17,7 @@ impl<A, T> Default for Component<A, T> {
     }
 }
 
-impl<A, T: std::fmt::Debug> Component<A, T> {
+impl<A, T> Component<A, T> {
     pub fn iter(&self) -> Iter<T> {
         self.values.iter()
     }
