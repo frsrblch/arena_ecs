@@ -1,7 +1,23 @@
 use crate::*;
 use bit_vec::BitVec;
 
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+#[derive(Debug)]
+pub struct DynamicAllocator<A> {
+    current_gen: Vec<Id<A>>,
+    dead: Vec<u32>,
+    living: BitVec,
+}
+
 impl<A> DynamicAllocator<A> {
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            current_gen: Vec::with_capacity(capacity),
+            dead: Vec::default(),
+            living: BitVec::with_capacity(capacity),
+        }
+    }
+
     pub fn validate(&self, id: impl TryIndexes<A>) -> Option<Valid<A>> {
         let id = id.id()?;
 
@@ -11,13 +27,6 @@ impl<A> DynamicAllocator<A> {
             None
         }
     }
-}
-
-#[derive(Debug)]
-pub struct DynamicAllocator<A> {
-    current_gen: Vec<Id<A>>,
-    dead: Vec<u32>,
-    living: BitVec,
 }
 
 impl<A> Default for DynamicAllocator<A> {

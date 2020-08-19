@@ -2,6 +2,7 @@ use crate::*;
 use std::marker::PhantomData;
 use std::slice::{Iter, IterMut};
 
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct Component<A, T> {
     values: Vec<T>,
@@ -18,6 +19,13 @@ impl<A, T> Default for Component<A, T> {
 }
 
 impl<A, T> Component<A, T> {
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            values: Vec::with_capacity(capacity),
+            marker: PhantomData,
+        }
+    }
+
     pub fn iter(&self) -> Iter<T> {
         self.values.iter()
     }
@@ -56,6 +64,17 @@ impl<A, T> Component<A, T> {
         } else {
             panic!("Invalid index: {:?}", std::any::type_name::<Self>());
         }
+    }
+}
+
+#[cfg(feature = "rayon")]
+impl<A, T: Send + Sync> Component<A, T> {
+    pub fn par_iter(&self) -> rayon::slice::Iter<T> {
+        self.values.par_iter()
+    }
+
+    pub fn par_iter_mut(&mut self) -> rayon::slice::IterMut<T> {
+        self.values.par_iter_mut()
     }
 }
 

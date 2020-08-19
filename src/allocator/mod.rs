@@ -6,6 +6,7 @@ use std::ops::{Deref, DerefMut};
 mod dynamic;
 mod fixed;
 
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct Allocator<A: Arena> {
     allocator: A::Allocator,
@@ -30,6 +31,14 @@ impl<A: Arena> Deref for Allocator<A> {
 impl<A: Arena> DerefMut for Allocator<A> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.allocator
+    }
+}
+
+impl<A: Arena<Allocator = DynamicAllocator<A>>> Allocator<A> {
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            allocator: DynamicAllocator::with_capacity(capacity),
+        }
     }
 }
 
