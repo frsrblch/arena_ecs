@@ -9,8 +9,6 @@ pub struct System {
 }
 
 impl Arena for System {
-    type Index = u16;
-    type Generation = ();
     type Allocator = FixedAllocator<Self>;
 }
 

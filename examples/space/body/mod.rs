@@ -48,8 +48,6 @@ pub struct Body {
 }
 
 impl Arena for Body {
-    type Index = u32;
-    type Generation = ();
     type Allocator = FixedAllocator<Self>;
 }
 
@@ -92,10 +90,9 @@ impl Body {
                 let orbit_fraction = time / orbit.period + orbit.offset;
                 let angle = orbit_fraction * Self::TWO_PI;
 
-                if let Some(pos) = positions.get_mut(body) {
-                    pos.0 = angle.sin();
-                    pos.1 = angle.cos();
-                }
+                let pos = positions.get_mut(body);
+                pos.0 = angle.sin();
+                pos.1 = angle.cos();
             });
     }
 
@@ -108,12 +105,10 @@ impl Body {
                 let orbit_fraction = time / orbit.period + orbit.offset;
                 let angle = orbit_fraction * Self::TWO_PI;
 
-                if let Some(parent_pos) = positions.get(orbit.parent).copied() {
-                    if let Some(pos) = positions.get_mut(body) {
-                        pos.0 = parent_pos.0 + angle.sin();
-                        pos.1 = parent_pos.1 + angle.cos();
-                    }
-                }
+                let parent_pos = *positions.get(orbit.parent);
+                let pos = positions.get_mut(body);
+                pos.0 = parent_pos.0 + angle.sin();
+                pos.1 = parent_pos.1 + angle.cos();
             });
     }
 

@@ -20,8 +20,6 @@ pub struct Colony {
 }
 
 impl Arena for Colony {
-    type Index = u16;
-    type Generation = NonZeroU16;
     type Allocator = DynamicAllocator<Self>;
 }
 

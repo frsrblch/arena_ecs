@@ -6,8 +6,6 @@ pub struct Government {
 }
 
 impl Arena for Government {
-    type Index = u8;
-    type Generation = NonZeroU8;
     type Allocator = DynamicAllocator<Self>;
 }
 
