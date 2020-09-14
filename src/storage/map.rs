@@ -7,6 +7,14 @@ pub struct IdMap<ID, T> {
     map: HashMap<Id<ID>, T>,
 }
 
+impl<ID, T: Clone> Clone for IdMap<ID, T> {
+    fn clone(&self) -> Self {
+        Self {
+            map: self.map.clone()
+        }
+    }
+}
+
 impl<ID, T> Default for IdMap<ID, T> {
     fn default() -> Self {
         Self {
