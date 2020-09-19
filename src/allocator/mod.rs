@@ -45,7 +45,6 @@ impl<A: Arena<Allocator = DynamicAllocator<A>>> Allocator<A> {
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
-    use std::mem::size_of;
 
     #[derive(Debug, Default)]
     pub(crate) struct FixedArena;
@@ -56,10 +55,4 @@ pub(crate) mod test {
     pub(crate) struct GenerationalArena;
 
     dynamic_arena!(GenerationalArena);
-
-    #[test]
-    fn allocator_size() {
-        assert_eq!(4, size_of::<Allocator<FixedArena>>());
-        assert_eq!(80, size_of::<Allocator<GenerationalArena>>());
-    }
 }
