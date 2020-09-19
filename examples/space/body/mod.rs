@@ -3,7 +3,6 @@ pub use planet::*;
 use std::collections::HashMap;
 use std::f64::consts::PI;
 
-
 mod planet;
 
 #[derive(Debug, Copy, Clone)]
@@ -34,6 +33,8 @@ pub struct MoonOrbitParams {
 
 #[derive(Debug, Default)]
 pub struct Body {
+    pub alloc: Allocator<Self>,
+
     pub system: Component<Self, Id<System>>,
     pub name: Component<Self, String>,
     pub mass: Component<Self, f64>,
@@ -52,7 +53,15 @@ impl Arena for Body {
 }
 
 impl Body {
-    pub fn insert(
+    pub fn create(&mut self, row: BodyRow, links: BodyLinks) -> Id<Self> {
+        let id = self.alloc.create();
+
+        self.insert(id, row, links);
+
+        id
+    }
+
+    fn insert(
         &mut self,
         id: Id<Self>,
         body: BodyRow,

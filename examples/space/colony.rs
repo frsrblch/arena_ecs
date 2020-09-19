@@ -1,15 +1,9 @@
 use super::*;
 
-impl State {
-    pub fn create_colony(&mut self, colony: ColonyRow, links: ColonyLinks) -> Id<Colony> {
-        let id = self.allocators.colony.create();
-        self.arenas.colony.insert(id, colony, links);
-        id.id
-    }
-}
-
 #[derive(Debug, Default)]
 pub struct Colony {
+    pub alloc: Allocator<Self>,
+
     pub body: Component<Self, Id<Body>>,
     pub name: Component<Self, String>,
     pub population: Component<Self, f64>,
@@ -24,12 +18,9 @@ impl Arena for Colony {
 }
 
 impl Colony {
-    pub fn insert(
-        &mut self,
-        id: impl Indexes<Self>,
-        colony: ColonyRow,
-        links: ColonyLinks,
-    ) {
+    pub fn create(&mut self, colony: ColonyRow, links: ColonyLinks) -> Id<Self> {
+        let id = self.alloc.create();
+
         self.name.insert(id, colony.name);
         self.population.insert(id, colony.population);
 
@@ -39,6 +30,8 @@ impl Colony {
         self.food_stockpile.insert(id, Default::default());
         self.food_production.insert(id, Default::default());
         self.food_supply_demand.insert(id, Default::default());
+
+        id.id()
     }
 }
 
