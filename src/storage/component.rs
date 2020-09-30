@@ -38,6 +38,10 @@ impl<A, T> Component<A, T> {
         self.values.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn get<I: Indexes<A>>(&self, id: I) -> &T {
         assert!(
             id.index() < self.values.len(),
@@ -64,6 +68,31 @@ impl<A, T> Component<A, T> {
         } else {
             panic!("Invalid index: {:?}", std::any::type_name::<Self>());
         }
+    }
+
+    pub fn fill_with<F: FnMut() -> T>(&mut self, mut f: F) {
+        self.iter_mut().for_each(|v| *v = f());
+    }
+}
+
+impl<ID, T: Clone> Component<ID, T> {
+    pub fn fill(&mut self, value: T) {
+        self.iter_mut().for_each(|v| *v = value.clone());
+    }
+}
+
+impl<ID1: Arena<Allocator=DynamicAllocator<ID1>>, T: std::ops::AddAssign<T> + Copy + Default> Component<ID1, T> {
+    pub fn sum_from<ID2, I: TryIndexes<ID1>>(&mut self, component: &Component<ID2, T>, link: &Component<ID2, I>, alloc: &Allocator<ID1>) {
+        self.fill_with(Default::default);
+
+        component.iter()
+            .zip(link.iter())
+            .for_each(|(component_value, id)| {
+                if let Some(id) = alloc.validate(*id) {
+                    let value = self.get_mut(id);
+                    *value += *component_value;
+                }
+            });
     }
 }
 

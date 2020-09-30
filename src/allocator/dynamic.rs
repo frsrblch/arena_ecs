@@ -7,6 +7,7 @@ pub struct DynamicAllocator<A> {
     current_gen: Vec<Id<A>>,
     dead: Vec<u32>,
     living: BitVec,
+    generation: u64,
 }
 
 impl<A> DynamicAllocator<A> {
@@ -15,6 +16,7 @@ impl<A> DynamicAllocator<A> {
             current_gen: Vec::with_capacity(capacity),
             dead: Vec::default(),
             living: BitVec::with_capacity(capacity),
+            generation: 0,
         }
     }
 
@@ -27,6 +29,10 @@ impl<A> DynamicAllocator<A> {
             None
         }
     }
+
+    pub fn generation(&self) -> u64 {
+        self.generation
+    }
 }
 
 impl<A> Default for DynamicAllocator<A> {
@@ -35,6 +41,7 @@ impl<A> Default for DynamicAllocator<A> {
             current_gen: vec![],
             dead: vec![],
             living: Default::default(),
+            generation: 0,
         }
     }
 }
@@ -69,18 +76,26 @@ impl<A> DynamicAllocator<A> {
         id
     }
 
-    pub fn kill(&mut self, id: Id<A>) {
+    pub fn kill(&mut self, id: Id<A>) -> bool {
         if self.is_alive(id) {
-            let index = id.get_u32();
-            let i = index as usize;
-
-            if let Some(current_id) = self.current_gen.get_mut(i) {
-                *current_id = current_id.next_gen();
-            }
-
-            self.dead.push(index);
-            self.living.set(i, false);
+            self.kill_unchecked(id);
+            true
+        } else {
+            false
         }
+    }
+
+    fn kill_unchecked(&mut self, id: Id<A>) {
+        let index = id.get_u32();
+        let i = index as usize;
+
+        if let Some(current_id) = self.current_gen.get_mut(i) {
+            *current_id = current_id.next_gen();
+        }
+
+        self.dead.push(index);
+        self.living.set(i, false);
+        self.generation += 1;
     }
 
     pub fn is_alive(&self, id: Id<A>) -> bool {
