@@ -20,7 +20,7 @@ impl Government {
 
         self.name.insert(id, govt.name);
 
-        id.id
+        id.value
     }
 
     pub fn build_trade_graphs(&mut self, colonies: &Colony, bodies: &Body) {
@@ -52,7 +52,7 @@ impl Government {
                     if let Some(govt) = self.alloc.validate(g1) {
                         let distance = bodies.get_distance(*b1, *b2);
                         let graph = self.trade.get_mut(govt);
-                        graph.insert(c1, c2, distance);
+                        graph.insert_ids(c1, c2, distance);
                     }
                 }
             });

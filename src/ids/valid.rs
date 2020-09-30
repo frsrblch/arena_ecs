@@ -1,86 +1,41 @@
 use super::*;
 use std::marker::PhantomData;
 
-#[derive(Debug)]
-pub struct Valid<'a, A> {
-    pub id: Id<A>,
-    marker: PhantomData<&'a A>,
+/// A wrapper that is used show that an Id or collection of Ids are valid for the specified lifetime.
+///
+/// # Generics
+/// 'a - The lifetime that the given wrapper is valid.
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub struct Valid<'a, T> {
+    pub value: T,
+    marker: PhantomData<&'a T>,
 }
 
-impl<A> Valid<'_, A> {
-    pub(crate) fn new(id: Id<A>) -> Self {
-        Valid {
-            id,
-            marker: PhantomData,
+impl<'a, T> Valid<'a, T> {
+    pub(crate) fn new(value: T) -> Self {
+        Self {
+            value,
+            marker: PhantomData
         }
     }
 }
 
-impl<A> Clone for Valid<'_, A> {
-    fn clone(&self) -> Self {
-        Self::new(self.id)
-    }
-}
-
-impl<A> Copy for Valid<'_, A> {}
-
-impl<A> Indexes<A> for Valid<'_, A> {
+impl<A> Indexes<A> for Valid<'_, Id<A>> {
     fn index(&self) -> usize {
-        self.id.get_index()
+        self.value.get_index()
     }
 
     fn id(&self) -> Id<A> {
-        self.id
+        self.value
     }
 }
 
-impl<A> Indexes<A> for &Valid<'_, A> {
+impl<'a, A> Indexes<A> for Valid<'_, &'a Id<A>> {
     fn index(&self) -> usize {
-        self.id.get_index()
+        self.value.get_index()
     }
 
     fn id(&self) -> Id<A> {
-        self.id
-    }
-}
-
-#[derive(Debug)]
-pub struct ValidRef<'a, A> {
-    pub id: &'a Id<A>,
-}
-
-impl<'a, A> ValidRef<'a, A> {
-    pub(crate) fn new(id: &'a Id<A>) -> Self {
-        ValidRef {
-            id,
-        }
-    }
-}
-
-impl<A> Clone for ValidRef<'_, A> {
-    fn clone(&self) -> Self {
-        Self::new(self.id)
-    }
-}
-
-impl<A> Copy for ValidRef<'_, A> {}
-
-impl<A> Indexes<A> for ValidRef<'_, A> {
-    fn index(&self) -> usize {
-        self.id.get_index()
-    }
-
-    fn id(&self) -> Id<A> {
-        *self.id
-    }
-}
-
-impl<A> Indexes<A> for &ValidRef<'_, A> {
-    fn index(&self) -> usize {
-        self.id.get_index()
-    }
-
-    fn id(&self) -> Id<A> {
-        *self.id
+        *self.value
     }
 }

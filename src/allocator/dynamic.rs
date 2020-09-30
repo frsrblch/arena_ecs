@@ -20,7 +20,7 @@ impl<A> DynamicAllocator<A> {
         }
     }
 
-    pub fn validate(&self, id: impl TryIndexes<A>) -> Option<Valid<A>> {
+    pub fn validate(&self, id: impl TryIndexes<A>) -> Option<Valid<Id<A>>> {
         let id = id.id()?;
 
         if self.is_alive(id) {
@@ -47,7 +47,7 @@ impl<A> Default for DynamicAllocator<A> {
 }
 
 impl<A> DynamicAllocator<A> {
-    pub fn create(&mut self) -> Valid<A> {
+    pub fn create(&mut self) -> Valid<Id<A>> {
         let id = if let Some(index) = self.dead.pop() {
             self.reuse_index(index)
         } else {
@@ -110,19 +110,19 @@ impl<A> DynamicAllocator<A> {
         self.living.iter()
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = Option<ValidRef<A>>> {
+    pub fn ids(&self) -> impl Iterator<Item = Option<Valid<&Id<A>>>> {
         self.current_gen.iter()
             .zip(self.living.iter())
             .map(|(id, live)| {
                 if live {
-                    Some(ValidRef::new(id))
+                    Some(Valid::new(id))
                 } else {
                     None
                 }
             })
     }
 
-    pub fn zip_id_and_filter<I: Iterator<Item=T>, T>(&self, iter: I) -> impl Iterator<Item=(T, ValidRef<A>)> {
+    pub fn zip_id_and_filter<I: Iterator<Item=T>, T>(&self, iter: I) -> impl Iterator<Item=(T, Valid<&Id<A>>)> {
         iter.zip(self.ids())
             .filter_map(|(t, id)| {
                 id.map(|id| (t, id))
@@ -141,11 +141,11 @@ mod tests {
 
         assert_eq!(
             Id::first(0),
-            gen_allocator.create().id
+            gen_allocator.create().value
         );
         assert_eq!(
             Id::first(1),
-            gen_allocator.create().id
+            gen_allocator.create().value
         );
     }
 
@@ -153,17 +153,17 @@ mod tests {
     fn reuse_generational() {
         let mut gen_allocator = Allocator::<GenerationalArena>::default();
 
-        let id1 = gen_allocator.create().id;
+        let id1 = gen_allocator.create().value;
         gen_allocator.kill(id1);
 
         let reused_id = Id::first(0).next_gen();
         assert_eq!(
             reused_id,
-            gen_allocator.create().id
+            gen_allocator.create().value
         );
         assert_eq!(
             Id::first(1),
-            gen_allocator.create().id
+            gen_allocator.create().value
         );
     }
 
@@ -171,7 +171,7 @@ mod tests {
     fn validate_valid_returns_some() {
         let mut allocator = Allocator::<GenerationalArena>::default();
 
-        let id = allocator.create().id;
+        let id = allocator.create().value;
 
         assert!(allocator.validate(id).is_some());
     }
@@ -180,7 +180,7 @@ mod tests {
     fn validate_invalid_returns_none() {
         let mut allocator = Allocator::<GenerationalArena>::default();
 
-        let id = allocator.create().id;
+        let id = allocator.create().value;
         allocator.kill(id);
 
         assert!(allocator.validate(id).is_none());
@@ -190,7 +190,7 @@ mod tests {
     fn gen_alloc_lifetime_test() {
         let mut allocator = Allocator::<GenerationalArena>::default();
 
-        let id1 = allocator.create().id; // Remove ".id" to cause a compiler error
+        let id1 = allocator.create().value; // Remove ".id" to cause a compiler error
         let id2 = allocator.create();
 
         println!("{:?}", id1);

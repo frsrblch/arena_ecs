@@ -35,13 +35,13 @@ impl<ID, T> IdMap<ID, T> {
         }
     }
 
-    /// Inserts a possibly-invalid Id and Value into the hashmap. Invalidates the IdMap's generation value.
+    /// Inserts a possibly-invalid Id and Value into the hashmap. Resets the IdMap's generation value.
     pub fn insert(&mut self, id: Id<ID>, value: T) {
         self.map.insert(id, value);
         self.generation = 0;
     }
 
-    /// Inserts a valid Id and Value into the hashmap. Does not invalidate the IdMap's generation value.
+    /// Inserts a valid Id and Value into the hashmap. Does not reset the IdMap's generation value.
     pub fn insert_valid<I: Indexes<ID>>(&mut self, id: I, value: T) {
         self.map.insert(id.id(), value);
     }
@@ -99,75 +99,64 @@ impl<ID, T> IdMap<ID, T> {
 }
 
 impl<ID: Arena<Allocator = DynamicAllocator<ID>>, T> IdMap<ID, T> {
-    pub fn validate<'a>(&'a mut self, allocator: &'a Allocator<ID>) -> ValidMap<'a, ID, T> {
-        if self.generation != allocator.generation() {
-            self.retain_living(allocator);
-        }
-
-        ValidMap { map: &mut (*self) }
-    }
+    // pub fn validate<'a>(&'a mut self, allocator: &'a Allocator<ID>) -> ValidMap<'a, ID, T> {
+    //     if self.generation != allocator.generation() {
+    //         self.retain_living(allocator);
+    //     }
+    //
+    //     ValidMap { map: &mut (*self) }
+    // }
 
     pub fn retain_living(&mut self, allocator: &Allocator<ID>) {
         self.map.retain(|id, _| allocator.is_alive(*id));
         self.generation = allocator.generation();
     }
-}
 
-#[derive(Debug)]
-pub struct ValidMap<'a, ID, T> {
-    map: &'a mut IdMap<ID, T>,
-}
+    pub fn validate<'a>(&'a mut self, allocator: &'a Allocator<ID>) -> Valid<&'a Self> {
+        if self.generation != allocator.generation() {
+            self.retain_living(allocator);
+        }
 
-impl<'a, ID, T> ValidMap<'a, ID, T> {
-    pub fn iter(&self) -> impl Iterator<Item=(ValidRef<ID>, &T)> {
-        self.map
-            .map
-            .iter()
-            .map(|(id, value)| (ValidRef::new(id), value))
+        Valid::new(self)
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item=(ValidRef<ID>, &mut T)> {
-        self.map
+    pub fn validate_mut<'a>(&'a mut self, allocator: &'a Allocator<ID>) -> Valid<&'a mut Self> {
+        if self.generation != allocator.generation() {
+            self.retain_living(allocator);
+        }
+
+        Valid::new(self)
+    }
+
+    pub fn try_validate<'a>(&'a self, allocator: &'a Allocator<ID>) -> Option<Valid<&'a Self>> {
+        if self.generation == allocator.generation() {
+            Some(Valid::new(self))
+        } else {
+            None
+        }
+    }
+}
+
+impl<'a, ID, T> Valid<'a, &'a IdMap<ID, T>> {
+    pub fn iter(&'a self) -> impl Iterator<Item=(Valid<'a, &Id<ID>>, &T)> {
+        self.value
+            .map
+            .iter()
+            .map(|(id, value)| (Valid::new(id), value))
+    }
+}
+
+impl<'a, ID, T> Valid<'a, &mut IdMap<ID, T>> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item=(Valid<'_, &Id<ID>>, &mut T)> {
+        self.value
             .map
             .iter_mut()
-            .map(|(id, value)| (ValidRef::new(id), value))
+            .map(|(id, value)| (Valid::new(id), value))
     }
 
-
-    pub fn retain<F: FnMut(ValidRef<ID>, &mut T) -> bool>(&mut self, mut f: F) {
-        let f = |id: &Id<ID>, v: &mut T| f(ValidRef::new(id), v);
-        self.map.retain(f)
-    }
-}
-
-use std::ops::AddAssign;
-impl<'a, ID, T: AddAssign<U>, U: Copy> AddAssign<ValidMap<'a, ID, U>> for Component<ID, T> {
-    fn add_assign(&mut self, map: ValidMap<ID, U>) {
-        *self += map
-            .iter()
-            .map(|(id, value)| (id, *value));
-    }
-}
-
-impl<'a, ID, T, U> AddAssign<&'a IdMap<ID, U>> for Component<ID, T>
-    where
-        ID: Arena<Allocator=FixedAllocator<ID>>,
-        T: AddAssign<U>,
-        U: Copy,
-{
-    fn add_assign(&mut self, map: &'a IdMap<ID, U>) {
-        *self += map
-            .iter()
-            .map(|(id, value)| (id, *value));
-    }
-}
-
-impl<ID, I: Indexes<ID>, T: AddAssign<U>, U, ITER: Iterator<Item=(I, U)>> AddAssign<ITER> for Component<ID, T> {
-    fn add_assign(&mut self, rhs: ITER) {
-        rhs.for_each(|(id, value)| {
-            let component_value = self.get_mut(id);
-            *component_value += value;
-        })
+    pub fn retain<F: FnMut(Valid<'a, Id<ID>>, &mut T) -> bool>(&mut self, mut f: F) {
+        let f = |id: &Id<ID>, v: &mut T| f(Valid::new(*id), v);
+        self.value.retain(f);
     }
 }
 
@@ -183,9 +172,9 @@ mod tests {
         let mut alloc = Allocator::<Test>::default();
         let mut map = IdMap::<Test, u32>::default();
 
-        let a = alloc.create().id;
-        let b = alloc.create().id;
-        let c = alloc.create().id;
+        let a = alloc.create().value;
+        let b = alloc.create().value;
+        let c = alloc.create().value;
 
         map.insert(a, 0);
         map.insert(b, 1);
