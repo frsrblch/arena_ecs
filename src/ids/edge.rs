@@ -13,7 +13,7 @@ impl<A> Edge<A> {
         Self { from, to }
     }
 
-    pub fn new_valid<'a, I: Indexes<A> + 'a>(from: I, to: I) -> Valid<'a, Self> {
+    pub fn new_valid<'a, I: ValidId<A> + 'a>(from: I, to: I) -> Valid<'a, Self> {
         Valid::new(Self::new(from.id(), to.id()))
     }
 

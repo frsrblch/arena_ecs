@@ -9,7 +9,7 @@ pub struct Graph<A, W> {
 }
 
 impl<A, W: PartialOrd> Graph<A, W> {
-    pub fn insert_min<I: Indexes<A>>(&mut self, from: I, to: I, weight: W) {
+    pub fn insert_min<I: ValidId<A>>(&mut self, from: I, to: I, weight: W) {
         let key = Edge { from: from.id(), to: to.id() };
 
         match self.edges.entry(key) {
@@ -24,7 +24,7 @@ impl<A, W: PartialOrd> Graph<A, W> {
         }
     }
 
-    pub fn insert_max<I: Indexes<A>>(&mut self, from: I, to: I, weight: W) {
+    pub fn insert_max<I: ValidId<A>>(&mut self, from: I, to: I, weight: W) {
         let key = Edge { from: from.id(), to: to.id() };
 
         match self.edges.entry(key) {
@@ -45,7 +45,7 @@ impl<A, W> Graph<A, W> {
         self.edges.insert(edge.value, weight);
     }
 
-    pub fn insert_ids<I: Indexes<A>>(&mut self, from: I, to: I, weight: W) {
+    pub fn insert_ids<I: ValidId<A>>(&mut self, from: I, to: I, weight: W) {
         let key = Edge { from: from.id(), to: to.id() };
         self.edges.insert(key, weight);
     }
@@ -72,7 +72,7 @@ impl<A, W> Graph<A, W> {
         self.edges.clear();
     }
 
-    pub fn get_edges<I: Indexes<A>>(&self, node: I) -> impl Iterator<Item=(&Edge<A>, &W)> + '_ {
+    pub fn get_edges<I: ValidId<A>>(&self, node: I) -> impl Iterator<Item=(&Edge<A>, &W)> + '_ {
         let node = node.id();
         self.edges
             .iter()

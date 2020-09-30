@@ -1,6 +1,6 @@
 use crate::*;
 
-pub trait Indexes<A>: Copy {
+pub trait ValidId<A>: Copy {
     fn index(&self) -> usize;
     fn id(&self) -> Id<A>;
 }

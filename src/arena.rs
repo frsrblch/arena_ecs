@@ -24,7 +24,7 @@ macro_rules! dynamic_arena {
 }
 
 pub trait DisplayEntity: Sized {
-    fn fmt_entity<I: Indexes<Self>>(&self, id: I, f: &mut Formatter) -> Result;
+    fn fmt_entity<I: ValidId<Self>>(&self, id: I, f: &mut Formatter) -> Result;
 }
 
 pub struct Entity<'a, A, I> {
@@ -32,7 +32,7 @@ pub struct Entity<'a, A, I> {
     pub id: I,
 }
 
-impl<A: Arena + DisplayEntity, I: Indexes<A> + Copy> Display for Entity<'_, A, I> {
+impl<A: Arena + DisplayEntity, I: ValidId<A> + Copy> Display for Entity<'_, A, I> {
     fn fmt(&self, f: &mut Formatter) -> Result {
         self.arena.fmt_entity(self.id, f)
     }

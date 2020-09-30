@@ -99,7 +99,7 @@ impl<A> Id<A> {
 
 const TWO_POW_24: u32 = 16_777_216;
 
-impl<A: Arena<Allocator = FixedAllocator<A>>> Indexes<A> for Id<A> {
+impl<A: Arena<Allocator = FixedAllocator<A>>> ValidId<A> for Id<A> {
     fn index(&self) -> usize {
         self.get_index()
     }
@@ -109,7 +109,7 @@ impl<A: Arena<Allocator = FixedAllocator<A>>> Indexes<A> for Id<A> {
     }
 }
 
-impl<A: Arena<Allocator = FixedAllocator<A>>> Indexes<A> for &Id<A> {
+impl<A: Arena<Allocator = FixedAllocator<A>>> ValidId<A> for &Id<A> {
     fn index(&self) -> usize {
         self.get_index()
     }

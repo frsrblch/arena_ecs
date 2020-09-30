@@ -42,7 +42,7 @@ impl<A, T> Component<A, T> {
         self.len() == 0
     }
 
-    pub fn get<I: Indexes<A>>(&self, id: I) -> &T {
+    pub fn get<I: ValidId<A>>(&self, id: I) -> &T {
         assert!(
             id.index() < self.values.len(),
             format!("Invalid index: {:?}", std::any::type_name::<Self>())
@@ -51,7 +51,7 @@ impl<A, T> Component<A, T> {
         self.values.get(id.index()).unwrap()
     }
 
-    pub fn get_mut<I: Indexes<A>>(&mut self, id: I) -> &mut T {
+    pub fn get_mut<I: ValidId<A>>(&mut self, id: I) -> &mut T {
         assert!(
             id.index() < self.values.len(),
             format!("Invalid index: {:?}", std::any::type_name::<Self>())
@@ -60,7 +60,7 @@ impl<A, T> Component<A, T> {
         self.values.get_mut(id.index()).unwrap()
     }
 
-    pub fn insert<I: Indexes<A>>(&mut self, id: I, value: T) {
+    pub fn insert<I: ValidId<A>>(&mut self, id: I, value: T) {
         if let Some(component) = self.values.get_mut(id.index()) {
             *component = value;
         } else if self.len() == id.index() {

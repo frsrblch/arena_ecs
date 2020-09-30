@@ -20,7 +20,7 @@ impl<'a, T> Valid<'a, T> {
     }
 }
 
-impl<A> Indexes<A> for Valid<'_, Id<A>> {
+impl<A> ValidId<A> for Valid<'_, Id<A>> {
     fn index(&self) -> usize {
         self.value.get_index()
     }
@@ -30,7 +30,7 @@ impl<A> Indexes<A> for Valid<'_, Id<A>> {
     }
 }
 
-impl<'a, A> Indexes<A> for Valid<'_, &'a Id<A>> {
+impl<'a, A> ValidId<A> for Valid<'_, &'a Id<A>> {
     fn index(&self) -> usize {
         self.value.get_index()
     }

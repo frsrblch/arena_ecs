@@ -42,16 +42,16 @@ impl<ID, T> IdMap<ID, T> {
     }
 
     /// Inserts a valid Id and Value into the hashmap. Does not reset the IdMap's generation value.
-    pub fn insert_valid<I: Indexes<ID>>(&mut self, id: I, value: T) {
+    pub fn insert_valid<I: ValidId<ID>>(&mut self, id: I, value: T) {
         self.map.insert(id.id(), value);
     }
 
-    pub fn get<I: Indexes<ID>>(&self, id: I) -> Option<&T> {
+    pub fn get<I: ValidId<ID>>(&self, id: I) -> Option<&T> {
         let id = id.id();
         self.get_unchecked(id)
     }
 
-    pub fn get_mut<I: Indexes<ID>>(&mut self, id: I) -> Option<&mut T> {
+    pub fn get_mut<I: ValidId<ID>>(&mut self, id: I) -> Option<&mut T> {
         let id = id.id();
         self.get_unchecked_mut(id)
     }
