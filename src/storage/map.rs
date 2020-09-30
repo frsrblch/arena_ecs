@@ -46,13 +46,13 @@ impl<ID, T> IdMap<ID, T> {
         self.map.insert(id.id(), value);
     }
 
-    pub fn get<I: TryIndexes<ID>>(&self, id: I) -> Option<&T> {
-        let id = id.id()?;
+    pub fn get<I: Indexes<ID>>(&self, id: I) -> Option<&T> {
+        let id = id.id();
         self.get_unchecked(id)
     }
 
-    pub fn get_mut<I: TryIndexes<ID>>(&mut self, id: I) -> Option<&mut T> {
-        let id = id.id()?;
+    pub fn get_mut<I: Indexes<ID>>(&mut self, id: I) -> Option<&mut T> {
+        let id = id.id();
         self.get_unchecked_mut(id)
     }
 

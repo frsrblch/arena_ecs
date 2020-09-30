@@ -16,7 +16,7 @@ impl State {
             .zip(self.colony.alloc.living())
             .for_each(|(((colony, pop), govt_id), living)| {
                 if living {
-                    if let Some(govt_id) = self.government.alloc.validate(govt_id) {
+                    if let Some(govt_id) = self.government.alloc.validate(*govt_id) {
                         let govt = self.government.name.get(govt_id);
                         println!("{} ({}): {}", colony, govt, pop);
                     }

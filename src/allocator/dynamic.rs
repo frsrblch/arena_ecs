@@ -20,9 +20,7 @@ impl<A> DynamicAllocator<A> {
         }
     }
 
-    pub fn validate(&self, id: impl TryIndexes<A>) -> Option<Valid<Id<A>>> {
-        let id = id.id()?;
-
+    pub fn validate(&self, id: Id<A>) -> Option<Valid<Id<A>>> {
         if self.is_alive(id) {
             Some(Valid::new(id))
         } else {

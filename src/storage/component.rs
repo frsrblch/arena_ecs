@@ -82,7 +82,7 @@ impl<ID, T: Clone> Component<ID, T> {
 }
 
 impl<ID1: Arena<Allocator=DynamicAllocator<ID1>>, T: std::ops::AddAssign<T> + Copy + Default> Component<ID1, T> {
-    pub fn sum_from<ID2, I: TryIndexes<ID1>>(&mut self, component: &Component<ID2, T>, link: &Component<ID2, I>, alloc: &Allocator<ID1>) {
+    pub fn sum_from<ID2>(&mut self, component: &Component<ID2, T>, link: &Component<ID2, Id<ID1>>, alloc: &Allocator<ID1>) {
         self.fill_with(Default::default);
 
         component.iter()
@@ -91,6 +91,21 @@ impl<ID1: Arena<Allocator=DynamicAllocator<ID1>>, T: std::ops::AddAssign<T> + Co
                 if let Some(id) = alloc.validate(*id) {
                     let value = self.get_mut(id);
                     *value += *component_value;
+                }
+            });
+    }
+
+    pub fn sum_from_opt<ID2>(&mut self, component: &Component<ID2, T>, link: &Component<ID2, Option<Id<ID1>>>, alloc: &Allocator<ID1>) {
+        self.fill_with(Default::default);
+
+        component.iter()
+            .zip(link.iter())
+            .for_each(|(component_value, id)| {
+                if let Some(id) = id {
+                    if let Some(id) = alloc.validate(*id) {
+                        let value = self.get_mut(id);
+                        *value += *component_value;
+                    }
                 }
             });
     }

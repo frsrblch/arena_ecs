@@ -49,7 +49,7 @@ impl Government {
                  ((g2, b2), c2))|
             {
                 if g1 == g2 {
-                    if let Some(govt) = self.alloc.validate(g1) {
+                    if let Some(govt) = self.alloc.validate(*g1) {
                         let distance = bodies.get_distance(*b1, *b2);
                         let graph = self.trade.get_mut(govt);
                         graph.insert_ids(c1, c2, distance);
