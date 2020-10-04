@@ -125,7 +125,7 @@ impl<A, T: Send + Sync> Component<A, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test::FixedArena;
+    use crate::allocator::test::FixedArena;
 
     #[test]
     fn get_at_valid_index() {
