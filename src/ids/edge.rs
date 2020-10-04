@@ -65,19 +65,75 @@ impl<A: Arena<Allocator=DynamicAllocator<A>>> Edge<A> {
         allocator.is_alive(self.from) && allocator.is_alive(self.to)
     }
 
-    pub fn validate<'a>(&self, allocator: &'a Allocator<A>) -> Option<(Valid<'a, Id<A>>, Valid<'a, Id<A>>)> {
-        let a = allocator.validate(self.from)?;
-        let b = allocator.validate(self.to)?;
-        Some((a, b))
+    pub fn validate(&self, allocator: &Allocator<A>) -> Option<Valid<Self>> {
+        if self.is_alive(allocator) {
+            Some(Valid::new(*self))
+        } else {
+            None
+        }
     }
 }
 
-impl<'a, A> Valid<'a, Edge<A>> {
-    pub fn from(&self) -> Valid<'a, Id<A>> {
+impl<A: Arena<Allocator=FixedAllocator<A>>> ValidEdge<A> for Edge<A> {
+    type Id = Id<A>;
+
+    fn edge(&self) -> Edge<A> {
+        *self
+    }
+
+    fn from(&self) -> Id<A> {
+        self.from
+    }
+
+    fn to(&self) -> Id<A> {
+        self.to
+    }
+}
+
+impl<'a, A: Arena<Allocator=FixedAllocator<A>>> ValidEdge<A> for &'a Edge<A> {
+    type Id = Id<A>;
+
+    fn edge(&self) -> Edge<A> {
+        **self
+    }
+
+    fn from(&self) -> Id<A> {
+        self.from
+    }
+
+    fn to(&self) -> Id<A> {
+        self.to
+    }
+}
+
+impl<'a, A: Arena<Allocator=DynamicAllocator<A>>> ValidEdge<A> for Valid<'a, Edge<A>> {
+    type Id = Valid<'a, Id<A>>;
+
+    fn edge(&self) -> Edge<A> {
+        self.value
+    }
+
+    fn from(&self) -> Self::Id {
         Valid::new(self.value.from)
     }
 
-    pub fn to(&self) -> Valid<'a, Id<A>> {
+    fn to(&self) -> Self::Id {
+        Valid::new(self.value.to)
+    }
+}
+
+impl<'a, 'b, A: Arena<Allocator=DynamicAllocator<A>>> ValidEdge<A> for &'a Valid<'b, Edge<A>> {
+    type Id = Valid<'b, Id<A>>;
+
+    fn edge(&self) -> Edge<A> {
+        self.value
+    }
+
+    fn from(&self) -> Self::Id {
+        Valid::new(self.value.from)
+    }
+
+    fn to(&self) -> Self::Id {
         Valid::new(self.value.to)
     }
 }

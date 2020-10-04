@@ -9,10 +9,8 @@ pub struct Graph<A, W> {
 }
 
 impl<A, W: PartialOrd> Graph<A, W> {
-    pub fn insert_min<I: ValidId<A>>(&mut self, from: I, to: I, weight: W) {
-        let key = Edge { from: from.id(), to: to.id() };
-
-        match self.edges.entry(key) {
+    pub fn insert_min<E: ValidEdge<A>>(&mut self, edge: E, weight: W) {
+        match self.edges.entry(edge.edge()) {
             Entry::Occupied(mut o) => {
                 if weight < *o.get() {
                     o.insert(weight);
@@ -24,10 +22,8 @@ impl<A, W: PartialOrd> Graph<A, W> {
         }
     }
 
-    pub fn insert_max<I: ValidId<A>>(&mut self, from: I, to: I, weight: W) {
-        let key = Edge { from: from.id(), to: to.id() };
-
-        match self.edges.entry(key) {
+    pub fn insert_max<E: ValidEdge<A>>(&mut self, edge: E, weight: W) {
+        match self.edges.entry(edge.edge()) {
             Entry::Occupied(mut o) => {
                 if weight > *o.get() {
                     o.insert(weight);
@@ -41,8 +37,8 @@ impl<A, W: PartialOrd> Graph<A, W> {
 }
 
 impl<A, W> Graph<A, W> {
-    pub fn insert_valid(&mut self, edge: Valid<Edge<A>>, weight: W) {
-        self.edges.insert(edge.value, weight);
+    pub fn insert<E: ValidEdge<A>>(&mut self, edge: E, weight: W) {
+        self.edges.insert(edge.edge(), weight);
     }
 
     pub fn insert_ids<I: ValidId<A>>(&mut self, from: I, to: I, weight: W) {
@@ -50,29 +46,28 @@ impl<A, W> Graph<A, W> {
         self.edges.insert(key, weight);
     }
 
-    pub fn insert(&mut self, edge: Edge<A>, weight: W) {
-        self.edges.insert(edge, weight);
-        self.generation = 0;
+    pub fn get<E: ValidEdge<A>>(&self, edge: E) -> Option<&W> {
+        self.edges.get(&edge.edge())
     }
 
-    pub fn get(&self, edge: &Edge<A>) -> Option<&W> {
-        self.edges.get(edge)
+    pub fn get_mut<E: ValidEdge<A>>(&mut self, edge: E) -> Option<&mut W> {
+        self.edges.get_mut(&edge.edge())
     }
 
-    pub fn get_mut(&mut self, edge: &Edge<A>) -> Option<&mut W> {
-        self.edges.get_mut(edge)
+    pub fn remove(&mut self, edge: Edge<A>) -> Option<W> {
+        self.edges.remove(&edge)
     }
 
-    pub fn remove(&mut self, from: Id<A>, to: Id<A>) -> Option<W> {
+    pub fn remove_ids(&mut self, from: Id<A>, to: Id<A>) -> Option<W> {
         let key = Edge { from, to };
-        self.edges.remove(&key)
+        self.remove(key)
     }
 
     pub fn clear(&mut self) {
         self.edges.clear();
     }
 
-    pub fn get_edges<I: ValidId<A>>(&self, node: I) -> impl Iterator<Item=(&Edge<A>, &W)> + '_ {
+    pub fn get_edges_from<I: ValidId<A>>(&self, node: I) -> impl Iterator<Item=(&Edge<A>, &W)> + '_ {
         let node = node.id();
         self.edges
             .iter()
@@ -89,11 +84,11 @@ impl<A: Arena<Allocator=DynamicAllocator<A>>, W> Graph<A, W> {
 
     pub fn retain_living(&mut self, allocator: &Allocator<A>) {
         self.edges.retain(|edge, _| edge.is_alive(allocator));
+        self.generation = allocator.generation();
     }
 
     pub fn validate<'a>(&'a mut self, allocator: &'a Allocator<A>) -> Valid<&'a Self> {
         if !self.is_synchronized(allocator) {
-            eprintln!("Unsynchronized graph: {}", std::any::type_name::<Self>());
             self.retain_living(allocator);
         }
 
@@ -102,7 +97,6 @@ impl<A: Arena<Allocator=DynamicAllocator<A>>, W> Graph<A, W> {
 
     pub fn validate_mut<'a>(&'a mut self, allocator: &'a Allocator<A>) -> Valid<&'a mut Self> {
         if !self.is_synchronized(allocator) {
-            eprintln!("Unsynchronized graph: {}", std::any::type_name::<Self>());
             self.retain_living(allocator);
         }
 
@@ -113,13 +107,34 @@ impl<A: Arena<Allocator=DynamicAllocator<A>>, W> Graph<A, W> {
         if self.is_synchronized(allocator) {
             Some(Valid::new(self))
         } else {
-            eprintln!("Unsynchronized graph: {}", std::any::type_name::<Self>());
             None
         }
     }
 
     fn is_synchronized(&self, allocator: &Allocator<A>) -> bool {
         self.generation == allocator.generation()
+    }
+}
+
+impl<'a, A, W> Valid<'_, &'a Graph<A, W>> {
+    pub fn iter(&self) -> impl Iterator<Item=(Valid<&'a Edge<A>>, &W)> {
+        self.value
+            .edges
+            .iter()
+            .map(|(e, w)| {
+                (Valid::new(e), w)
+            })
+    }
+}
+
+impl<'a, A, W> Valid<'_, &'a mut Graph<A, W>> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item=(Valid<&Edge<A>>, &mut W)> {
+        self.value
+            .edges
+            .iter_mut()
+            .map(|(e, w)| {
+                (Valid::new(e), w)
+            })
     }
 }
 
@@ -131,13 +146,13 @@ mod tests {
     #[test]
     fn insert_min_if_vacant() {
         let mut alloc = Allocator::<FixedArena>::default();
-        let mut graph = Graph::<FixedArena, u32>::default();
+        let mut graph = Graph::<FixedArena<>, u32>::default();
 
         let from = alloc.create();
         let to = alloc.create();
         let edge = Edge { from, to };
 
-        graph.insert_min(from, to, 1);
+        graph.insert_min(edge, 1);
 
         assert_eq!(Some(&1), graph.get(&edge));
     }
@@ -145,15 +160,15 @@ mod tests {
     #[test]
     fn insert_min_if_occupied_and_greater() {
         let mut alloc = Allocator::<FixedArena>::default();
-        let mut graph = Graph::<FixedArena, u32>::default();
+        let mut graph = Graph::<FixedArena<>, u32>::default();
 
         let from = alloc.create();
         let to = alloc.create();
         let edge = Edge { from, to };
 
-        graph.insert_ids(from, to, 0);
+        graph.insert(edge, 0);
 
-        graph.insert_min(from, to, 1);
+        graph.insert_min(edge, 1);
 
         assert_eq!(Some(&0), graph.get(&edge));
     }
@@ -161,15 +176,15 @@ mod tests {
     #[test]
     fn insert_min_if_occupied_and_lesser() {
         let mut alloc = Allocator::<FixedArena>::default();
-        let mut graph = Graph::<FixedArena, u32>::default();
+        let mut graph = Graph::<FixedArena<>, u32>::default();
 
         let from = alloc.create();
         let to = alloc.create();
         let edge = Edge { from, to };
 
-        graph.insert_ids(from, to, 2);
+        graph.insert(edge, 2);
 
-        graph.insert_min(from, to, 1);
+        graph.insert_min(edge, 1);
 
         assert_eq!(Some(&1), graph.get(&edge));
     }
@@ -177,13 +192,13 @@ mod tests {
     #[test]
     fn insert_max_if_vacant() {
         let mut alloc = Allocator::<FixedArena>::default();
-        let mut graph = Graph::<FixedArena, u32>::default();
+        let mut graph = Graph::<FixedArena<>, u32>::default();
 
         let from = alloc.create();
         let to = alloc.create();
         let edge = Edge { from, to };
 
-        graph.insert_max(from, to, 1);
+        graph.insert_max(edge, 1);
 
         assert_eq!(Some(&1), graph.get(&edge));
     }
@@ -191,15 +206,15 @@ mod tests {
     #[test]
     fn insert_max_if_occupied_and_greater() {
         let mut alloc = Allocator::<FixedArena>::default();
-        let mut graph = Graph::<FixedArena, u32>::default();
+        let mut graph = Graph::<FixedArena<>, u32>::default();
 
         let from = alloc.create();
         let to = alloc.create();
         let edge = Edge { from, to };
 
-        graph.insert_ids(from, to, 0);
+        graph.insert(edge, 0);
 
-        graph.insert_max(from, to, 1);
+        graph.insert_max(edge, 1);
 
         assert_eq!(Some(&1), graph.get(&edge));
     }
@@ -207,18 +222,16 @@ mod tests {
     #[test]
     fn insert_max_if_occupied_and_lesser() {
         let mut alloc = Allocator::<FixedArena>::default();
-        let mut graph = Graph::<FixedArena, u32>::default();
+        let mut graph = Graph::<FixedArena<>, u32>::default();
 
         let from = alloc.create();
         let to = alloc.create();
         let edge = Edge { from, to };
 
-        graph.insert_ids(from, to, 2);
+        graph.insert(edge, 2);
 
-        graph.insert_max(from, to, 1);
+        graph.insert_max(edge, 1);
 
         assert_eq!(Some(&2), graph.get(&edge));
     }
-
-
 }
