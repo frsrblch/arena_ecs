@@ -1,7 +1,7 @@
 use crate::*;
 use bit_vec::BitVec;
 
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct DynamicAllocator<A> {
     current_gen: Vec<Id<A>>,
@@ -109,22 +109,26 @@ impl<A> DynamicAllocator<A> {
     }
 
     pub fn ids(&self) -> impl Iterator<Item = Option<Valid<&Id<A>>>> {
-        self.current_gen.iter()
+        self.current_gen
+            .iter()
             .zip(self.living.iter())
-            .map(|(id, live)| {
-                if live {
-                    Some(Valid::new(id))
-                } else {
-                    None
-                }
-            })
+            .map(|(id, live)| if live { Some(Valid::new(id)) } else { None })
     }
 
-    pub fn zip_id_and_filter<I: Iterator<Item=T>, T>(&self, iter: I) -> impl Iterator<Item=(T, Valid<&Id<A>>)> {
+    pub fn zip_id_and_filter<I: Iterator<Item = T>, T>(
+        &self,
+        iter: I,
+    ) -> impl Iterator<Item = (T, Valid<&Id<A>>)> {
         iter.zip(self.ids())
-            .filter_map(|(t, id)| {
-                id.map(|id| (t, id))
-            })
+            .filter_map(|(t, id)| id.map(|id| (t, id)))
+    }
+
+    pub fn filter_living<'a, I: Iterator<Item = T> + 'a, T>(
+        &'a self,
+        iter: I,
+    ) -> impl Iterator<Item = T> + 'a {
+        iter.zip(self.living.iter())
+            .filter_map(|(t, alive)| if alive { Some(t) } else { None })
     }
 }
 
@@ -137,14 +141,8 @@ mod tests {
     fn create_generational() {
         let mut gen_allocator = Allocator::<GenerationalArena>::default();
 
-        assert_eq!(
-            Id::first(0),
-            gen_allocator.create().value
-        );
-        assert_eq!(
-            Id::first(1),
-            gen_allocator.create().value
-        );
+        assert_eq!(Id::first(0), gen_allocator.create().value);
+        assert_eq!(Id::first(1), gen_allocator.create().value);
     }
 
     #[test]
@@ -155,14 +153,8 @@ mod tests {
         gen_allocator.kill(id1);
 
         let reused_id = Id::first(0).next_gen();
-        assert_eq!(
-            reused_id,
-            gen_allocator.create().value
-        );
-        assert_eq!(
-            Id::first(1),
-            gen_allocator.create().value
-        );
+        assert_eq!(reused_id, gen_allocator.create().value);
+        assert_eq!(Id::first(1), gen_allocator.create().value);
     }
 
     #[test]
