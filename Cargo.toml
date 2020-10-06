@@ -1,5 +1,5 @@
 [package]
-name = "arena_ecs"
+name = "gen_id"
 version = "0.1.0"
 authors = ["Fraser Balch <farseer.ulwithy@gmail.com>"]
 edition = "2018"

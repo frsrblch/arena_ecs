@@ -1,4 +1,4 @@
-use arena_ecs::*;
+use gen_id::*;
 use state::*;
 use system::*;
 use body::*;

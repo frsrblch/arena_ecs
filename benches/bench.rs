@@ -1,5 +1,5 @@
 use criterion::*;
-use arena_ecs::*;
+use gen_id::*;
 use rand::{seq::SliceRandom, SeedableRng};
 use rand::prelude::StdRng;
 
