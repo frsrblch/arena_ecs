@@ -2,7 +2,7 @@ use crate::*;
 use std::marker::PhantomData;
 use std::slice::{Iter, IterMut};
 
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct Component<A, T> {
     values: Vec<T>,
@@ -81,11 +81,19 @@ impl<ID, T: Clone> Component<ID, T> {
     }
 }
 
-impl<ID1: Arena<Allocator=DynamicAllocator<ID1>>, T: std::ops::AddAssign<T> + Copy + Default> Component<ID1, T> {
-    pub fn sum_from<ID2>(&mut self, component: &Component<ID2, T>, link: &Component<ID2, Id<ID1>>, alloc: &Allocator<ID1>) {
+impl<ID1: Arena<Allocator = DynamicAllocator<ID1>>, T: std::ops::AddAssign<T> + Copy + Default>
+    Component<ID1, T>
+{
+    pub fn sum_from<ID2>(
+        &mut self,
+        component: &Component<ID2, T>,
+        link: &Component<ID2, Id<ID1>>,
+        alloc: &Allocator<ID1>,
+    ) {
         self.fill_with(Default::default);
 
-        component.iter()
+        component
+            .iter()
             .zip(link.iter())
             .for_each(|(component_value, id)| {
                 if let Some(id) = alloc.validate(*id) {
@@ -95,10 +103,16 @@ impl<ID1: Arena<Allocator=DynamicAllocator<ID1>>, T: std::ops::AddAssign<T> + Co
             });
     }
 
-    pub fn sum_from_opt<ID2>(&mut self, component: &Component<ID2, T>, link: &Component<ID2, Option<Id<ID1>>>, alloc: &Allocator<ID1>) {
+    pub fn sum_from_opt<ID2>(
+        &mut self,
+        component: &Component<ID2, T>,
+        link: &Component<ID2, Option<Id<ID1>>>,
+        alloc: &Allocator<ID1>,
+    ) {
         self.fill_with(Default::default);
 
-        component.iter()
+        component
+            .iter()
             .zip(link.iter())
             .for_each(|(component_value, id)| {
                 if let Some(id) = id {
@@ -108,6 +122,24 @@ impl<ID1: Arena<Allocator=DynamicAllocator<ID1>>, T: std::ops::AddAssign<T> + Co
                     }
                 }
             });
+    }
+}
+
+impl<'a, ID, T> IntoIterator for &'a Component<ID, T> {
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.values.iter()
+    }
+}
+
+impl<'a, ID, T> IntoIterator for &'a mut Component<ID, T> {
+    type Item = &'a mut T;
+    type IntoIter = IterMut<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.values.iter_mut()
     }
 }
 
