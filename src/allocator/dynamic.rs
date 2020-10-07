@@ -100,7 +100,7 @@ impl<A> DynamicAllocator<A> {
         if let Some(current_id) = self.current_gen.get(id.get_index()) {
             id.eq(&current_id)
         } else {
-            panic!("{}: Invalid id", std::any::type_name::<Self>())
+            false
         }
     }
 
