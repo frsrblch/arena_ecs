@@ -49,10 +49,10 @@ pub struct ColonyLinks {
 
 impl Colony {
     pub fn update_food(&mut self) {
-        self.food_stockpile.iter_mut()
-            .zip(self.food_supply_demand.iter_mut())
-            .zip(self.food_production.iter())
-            .zip(self.population.iter())
+        self.food_stockpile
+            .zip_mut(&mut self.food_supply_demand)
+            .zip(&self.food_production)
+            .zip(&self.population)
             .for_each(|(((stocks, supply_demand), production), pop)| {
                 *supply_demand = production - 2.0 * pop;
                 *stocks -= *supply_demand;

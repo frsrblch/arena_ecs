@@ -24,16 +24,12 @@ impl Government {
     }
 
     pub fn build_trade_graphs(&mut self, colonies: &Colony, bodies: &Body) {
-        self.trade
-            .iter_mut()
-            .for_each(|g| g.clear());
+        self.trade.iter_mut().for_each(|g| g.clear());
 
         let get_colony_govt_body_and_id = || {
-            let body_govt = colonies.government.iter()
-                .zip(colonies.body.iter());
+            let body_govt = colonies.government.zip(&colonies.body);
 
-            colonies.alloc
-                .zip_id_and_filter(body_govt)
+            colonies.alloc.zip_id_and_filter(body_govt)
         };
 
         let iter_pairs = get_colony_govt_body_and_id()
@@ -44,18 +40,15 @@ impl Government {
                     .map(move |t2| (t1, t2))
             });
 
-        iter_pairs.for_each(
-            |(((g1, b1), c1),
-                 ((g2, b2), c2))|
-            {
-                if g1 == g2 {
-                    if let Some(govt) = self.alloc.validate(*g1) {
-                        let distance = bodies.get_distance(*b1, *b2);
-                        let graph = self.trade.get_mut(govt);
-                        graph.insert_ids(c1, c2, distance);
-                    }
+        for (((g1, b1), c1), ((g2, b2), c2)) in iter_pairs {
+            if g1 == g2 {
+                if let Some(govt) = self.alloc.validate(*g1) {
+                    let distance = bodies.get_distance(*b1, *b2);
+                    let graph = self.trade.get_mut(govt);
+                    graph.insert_ids(c1, c2, distance);
                 }
-            });
+            }
+        }
     }
 }
 

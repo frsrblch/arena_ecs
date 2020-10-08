@@ -1,15 +1,69 @@
 use crate::*;
 use std::marker::PhantomData;
-use std::slice::{Iter, IterMut};
+use std::ops::AddAssign;
+
+pub struct Iter<'a, ID, T> {
+    iter: std::slice::Iter<'a, T>,
+    marker: PhantomData<ID>,
+}
+
+impl<'a, ID, T> Iter<'a, ID, T> {
+    fn new(component: &'a Component<ID, T>) -> Self {
+        Self {
+            iter: component.values.iter(),
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<'a, ID, T> IntoIterator for Iter<'a, ID, T> {
+    type Item = &'a T;
+    type IntoIter = std::slice::Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter
+    }
+}
+
+impl<ID: Arena, T> ArenaIterator for Iter<'_, ID, T> {
+    type Arena = ID;
+}
+
+pub struct IterMut<'a, ID, T> {
+    iter_mut: std::slice::IterMut<'a, T>,
+    marker: PhantomData<ID>,
+}
+
+impl<'a, ID, T> IterMut<'a, ID, T> {
+    fn new(component: &'a mut Component<ID, T>) -> Self {
+        Self {
+            iter_mut: component.values.iter_mut(),
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<'a, ID, T> IntoIterator for IterMut<'a, ID, T> {
+    type Item = &'a mut T;
+    type IntoIter = std::slice::IterMut<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut
+    }
+}
+
+impl<ID: Arena, T> ArenaIterator for IterMut<'_, ID, T> {
+    type Arena = ID;
+}
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
-pub struct Component<A, T> {
+pub struct Component<ID, T> {
     values: Vec<T>,
-    marker: PhantomData<A>,
+    marker: PhantomData<ID>,
 }
 
-impl<A, T> Default for Component<A, T> {
+impl<ID, T> Default for Component<ID, T> {
     fn default() -> Self {
         Self {
             values: vec![],
@@ -18,7 +72,7 @@ impl<A, T> Default for Component<A, T> {
     }
 }
 
-impl<A, T> Component<A, T> {
+impl<ID, T> Component<ID, T> {
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             values: Vec::with_capacity(capacity),
@@ -26,12 +80,12 @@ impl<A, T> Component<A, T> {
         }
     }
 
-    pub fn iter(&self) -> Iter<T> {
-        self.values.iter()
+    pub fn iter(&self) -> Iter<ID, T> {
+        Iter::new(self)
     }
 
-    pub fn iter_mut(&mut self) -> IterMut<T> {
-        self.values.iter_mut()
+    pub fn iter_mut(&mut self) -> IterMut<ID, T> {
+        IterMut::new(self)
     }
 
     pub fn len(&self) -> usize {
@@ -42,7 +96,7 @@ impl<A, T> Component<A, T> {
         self.len() == 0
     }
 
-    pub fn get<I: ValidId<A>>(&self, id: I) -> &T {
+    pub fn get<I: ValidId<ID>>(&self, id: I) -> &T {
         assert!(
             id.index() < self.values.len(),
             format!("Invalid index: {:?}", std::any::type_name::<Self>())
@@ -51,7 +105,7 @@ impl<A, T> Component<A, T> {
         self.values.get(id.index()).unwrap()
     }
 
-    pub fn get_mut<I: ValidId<A>>(&mut self, id: I) -> &mut T {
+    pub fn get_mut<I: ValidId<ID>>(&mut self, id: I) -> &mut T {
         assert!(
             id.index() < self.values.len(),
             format!("Invalid index: {:?}", std::any::type_name::<Self>())
@@ -60,7 +114,7 @@ impl<A, T> Component<A, T> {
         self.values.get_mut(id.index()).unwrap()
     }
 
-    pub fn insert<I: ValidId<A>>(&mut self, id: I, value: T) {
+    pub fn insert<I: ValidId<ID>>(&mut self, id: I, value: T) {
         if let Some(component) = self.values.get_mut(id.index()) {
             *component = value;
         } else if self.len() == id.index() {
@@ -71,20 +125,26 @@ impl<A, T> Component<A, T> {
     }
 
     pub fn fill_with<F: FnMut() -> T>(&mut self, mut f: F) {
-        self.iter_mut().for_each(|v| *v = f());
+        for v in self.iter_mut() {
+            *v = f();
+        }
     }
 }
 
 impl<ID, T: Clone> Component<ID, T> {
     pub fn fill(&mut self, value: T) {
-        self.iter_mut().for_each(|v| *v = value.clone());
+        for v in self.iter_mut() {
+            *v = value.clone();
+        }
     }
 }
 
-impl<ID1: Arena<Allocator = DynamicAllocator<ID1>>, T: std::ops::AddAssign<T> + Copy + Default>
-    Component<ID1, T>
+impl<ID1, T> Component<ID1, T>
+where
+    ID1: Arena<Allocator = DynamicAllocator<ID1>>,
+    T: AddAssign<T> + Copy + Default,
 {
-    pub fn sum_from<ID2>(
+    pub fn sum_from<ID2: Arena>(
         &mut self,
         component: &Component<ID2, T>,
         link: &Component<ID2, Id<ID1>>,
@@ -92,42 +152,35 @@ impl<ID1: Arena<Allocator = DynamicAllocator<ID1>>, T: std::ops::AddAssign<T> + 
     ) {
         self.fill_with(Default::default);
 
-        component
-            .iter()
-            .zip(link.iter())
-            .for_each(|(component_value, id)| {
-                if let Some(id) = alloc.validate(*id) {
-                    let value = self.get_mut(id);
-                    *value += *component_value;
-                }
-            });
+        component.zip(link).for_each(|(value, id)| {
+            if let Some(id) = alloc.validate(*id) {
+                let self_value = self.get_mut(id);
+                *self_value += *value;
+            }
+        });
     }
 
-    pub fn sum_from_opt<ID2>(
+    pub fn sum_from_link<ID2: Arena>(
         &mut self,
         component: &Component<ID2, T>,
-        link: &Component<ID2, Option<Id<ID1>>>,
+        link: &mut IdLink<ID2, ID1>,
         alloc: &Allocator<ID1>,
     ) {
         self.fill_with(Default::default);
 
-        component
-            .iter()
-            .zip(link.iter())
-            .for_each(|(component_value, id)| {
-                if let Some(id) = id {
-                    if let Some(id) = alloc.validate(*id) {
-                        let value = self.get_mut(id);
-                        *value += *component_value;
-                    }
-                }
-            });
+        let link = link.validate(alloc);
+
+        for (value, id) in component.zip(&link) {
+            if let Some(id) = id {
+                *self.get_mut(id) += *value;
+            }
+        }
     }
 }
 
 impl<'a, ID, T> IntoIterator for &'a Component<ID, T> {
     type Item = &'a T;
-    type IntoIter = Iter<'a, T>;
+    type IntoIter = std::slice::Iter<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.values.iter()
@@ -136,15 +189,33 @@ impl<'a, ID, T> IntoIterator for &'a Component<ID, T> {
 
 impl<'a, ID, T> IntoIterator for &'a mut Component<ID, T> {
     type Item = &'a mut T;
-    type IntoIter = IterMut<'a, T>;
+    type IntoIter = std::slice::IterMut<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.values.iter_mut()
     }
 }
 
+impl<'a, ID: Arena, T> ArenaIterator for &'a Component<ID, T> {
+    type Arena = ID;
+}
+
+impl<'a, ID: Arena, T> ArenaIterator for &'a mut Component<ID, T> {
+    type Arena = ID;
+}
+
+impl<ID: Arena, T> Component<ID, T> {
+    pub fn zip<A: ArenaIterator<Arena = ID>>(&self, rhs: A) -> ArenaZip<ID, &Self, A> {
+        ArenaZip::new(self, rhs)
+    }
+
+    pub fn zip_mut<A: ArenaIterator<Arena = ID>>(&mut self, rhs: A) -> ArenaZip<ID, &mut Self, A> {
+        ArenaZip::new(self, rhs)
+    }
+}
+
 #[cfg(feature = "rayon")]
-impl<A, T: Send + Sync> Component<A, T> {
+impl<ID, T: Send + Sync> Component<ID, T> {
     pub fn par_iter(&self) -> rayon::slice::Iter<T> {
         self.values.par_iter()
     }

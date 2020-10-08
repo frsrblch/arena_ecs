@@ -4,7 +4,7 @@ pub use ids::*;
 pub use storage::*;
 pub use traits::*;
 
-#[cfg(feature="serde")]
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "rayon")]

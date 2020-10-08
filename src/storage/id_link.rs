@@ -1,4 +1,5 @@
 use crate::*;
+use std::marker::PhantomData;
 
 #[derive(Debug)]
 pub struct IdLink<A, B> {
@@ -41,15 +42,13 @@ impl<A, B> IdLink<A, B> {
     }
 }
 
-impl<A, B: Arena<Allocator=DynamicAllocator<B>>> IdLink<A, B> {
+impl<A, B: Arena<Allocator = DynamicAllocator<B>>> IdLink<A, B> {
     pub fn kill(&mut self, id: Id<B>) {
-        self.component
-            .iter_mut()
-            .for_each(|link| {
-                if *link == Some(id) {
-                    *link = None;
-                }
-            });
+        for link in self.component.iter_mut() {
+            if *link == Some(id) {
+                *link = None;
+            }
+        }
 
         self.generation += 1;
     }
@@ -100,7 +99,36 @@ impl<'a, A, B> Valid<'a, &IdLink<A, B>> {
         self.value.component.get(id).map(Valid::new)
     }
 
-    pub fn iter(&'a self) -> impl Iterator<Item=Option<Valid<'a, &Id<B>>>> {
-        self.value.component.iter().map(|id| id.as_ref().map(|id| Valid::new(id)))
+    pub fn iter(&'a self) -> Iter<A, B> {
+        Iter {
+            iter: self.value.component.iter().into_iter(),
+            marker: PhantomData,
+        }
     }
+}
+
+pub struct Iter<'a, A, B> {
+    iter: std::slice::Iter<'a, Option<Id<B>>>,
+    marker: PhantomData<A>,
+}
+
+impl<'a, A, B> Iterator for Iter<'a, A, B> {
+    type Item = Option<Valid<'a, &'a Id<B>>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|id| id.as_ref().map(Valid::new))
+    }
+}
+
+impl<'a, A, B> IntoIterator for &'a Valid<'a, &IdLink<A, B>> {
+    type Item = Option<Valid<'a, &'a Id<B>>>;
+    type IntoIter = Iter<'a, A, B>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, A: Arena, B> ArenaIterator for &'a Valid<'a, &IdLink<A, B>> {
+    type Arena = A;
 }

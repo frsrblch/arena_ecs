@@ -1,16 +1,18 @@
 use crate::*;
 use bit_vec::BitVec;
+use std::iter::Zip;
+use std::marker::PhantomData;
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
-pub struct DynamicAllocator<A> {
-    current_gen: Vec<Id<A>>,
+pub struct DynamicAllocator<ID> {
+    current_gen: Vec<Id<ID>>,
     dead: Vec<u32>,
     living: BitVec,
     generation: u64,
 }
 
-impl<A> DynamicAllocator<A> {
+impl<ID> DynamicAllocator<ID> {
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             current_gen: Vec::with_capacity(capacity),
@@ -20,7 +22,7 @@ impl<A> DynamicAllocator<A> {
         }
     }
 
-    pub fn validate(&self, id: Id<A>) -> Option<Valid<Id<A>>> {
+    pub fn validate(&self, id: Id<ID>) -> Option<Valid<Id<ID>>> {
         if self.is_alive(id) {
             Some(Valid::new(id))
         } else {
@@ -33,7 +35,7 @@ impl<A> DynamicAllocator<A> {
     }
 }
 
-impl<A> Default for DynamicAllocator<A> {
+impl<ID> Default for DynamicAllocator<ID> {
     fn default() -> Self {
         Self {
             current_gen: vec![],
@@ -44,8 +46,8 @@ impl<A> Default for DynamicAllocator<A> {
     }
 }
 
-impl<A> DynamicAllocator<A> {
-    pub fn create(&mut self) -> Valid<Id<A>> {
+impl<ID> DynamicAllocator<ID> {
+    pub fn create(&mut self) -> Valid<Id<ID>> {
         let id = if let Some(index) = self.dead.pop() {
             self.reuse_index(index)
         } else {
@@ -55,7 +57,7 @@ impl<A> DynamicAllocator<A> {
         Valid::new(id)
     }
 
-    fn reuse_index(&mut self, index: u32) -> Id<A> {
+    fn reuse_index(&mut self, index: u32) -> Id<ID> {
         let i = index as usize;
 
         self.living.set(i, true);
@@ -63,7 +65,7 @@ impl<A> DynamicAllocator<A> {
         self.current_gen[i]
     }
 
-    fn create_new(&mut self) -> Id<A> {
+    fn create_new(&mut self) -> Id<ID> {
         let index = self.current_gen.len() as u32;
 
         let id = Id::first(index);
@@ -74,7 +76,7 @@ impl<A> DynamicAllocator<A> {
         id
     }
 
-    pub fn kill(&mut self, id: Id<A>) -> bool {
+    pub fn kill(&mut self, id: Id<ID>) -> bool {
         if self.is_alive(id) {
             self.kill_unchecked(id);
             true
@@ -83,7 +85,7 @@ impl<A> DynamicAllocator<A> {
         }
     }
 
-    fn kill_unchecked(&mut self, id: Id<A>) {
+    fn kill_unchecked(&mut self, id: Id<ID>) {
         let index = id.get_u32();
         let i = index as usize;
 
@@ -96,7 +98,7 @@ impl<A> DynamicAllocator<A> {
         self.generation += 1;
     }
 
-    pub fn is_alive(&self, id: Id<A>) -> bool {
+    pub fn is_alive(&self, id: Id<ID>) -> bool {
         if let Some(current_id) = self.current_gen.get(id.get_index()) {
             id.eq(&current_id)
         } else {
@@ -104,32 +106,86 @@ impl<A> DynamicAllocator<A> {
         }
     }
 
-    pub fn living(&self) -> impl Iterator<Item = bool> + '_ {
-        self.living.iter()
+    pub fn living(&self) -> Living<ID> {
+        Living::new(self)
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = Option<Valid<&Id<A>>>> {
+    pub fn ids<'a>(&'a self) -> impl Iterator<Item = Option<Valid<'a, &'a Id<ID>>>> + 'a {
         self.current_gen
             .iter()
             .zip(self.living.iter())
             .map(|(id, live)| if live { Some(Valid::new(id)) } else { None })
     }
+}
 
-    pub fn zip_id_and_filter<I: Iterator<Item = T>, T>(
+impl<ID: Arena<Allocator = DynamicAllocator<ID>>> DynamicAllocator<ID> {
+    pub fn zip_id_and_filter<'a, I: ArenaIterator + IntoIterator<Item = T> + 'a, T>(
         &self,
         iter: I,
-    ) -> impl Iterator<Item = (T, Valid<&Id<A>>)> {
-        iter.zip(self.ids())
+    ) -> impl Iterator<Item = (T, Valid<&Id<ID>>)> {
+        iter.into_iter()
+            .zip(self.ids())
             .filter_map(|(t, id)| id.map(|id| (t, id)))
     }
 
-    pub fn filter_living<'a, I: Iterator<Item = T> + 'a, T>(
+    pub fn filter_living<'a, I: ArenaIterator + IntoIterator<Item = T> + 'a, T>(
         &'a self,
         iter: I,
     ) -> impl Iterator<Item = T> + 'a {
-        iter.zip(self.living.iter())
+        iter.into_iter()
+            .zip(self.living.iter())
             .filter_map(|(t, alive)| if alive { Some(t) } else { None })
     }
+}
+
+pub struct Living<'a, ID> {
+    bits: bit_vec::Iter<'a>,
+    marker: PhantomData<ID>,
+}
+
+impl<'a, ID> Living<'a, ID> {
+    fn new(alloc: &'a DynamicAllocator<ID>) -> Self {
+        Self {
+            bits: alloc.living.iter(),
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<'a, ID> IntoIterator for Living<'a, ID> {
+    type Item = bool;
+    type IntoIter = bit_vec::Iter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.bits
+    }
+}
+
+impl<'a, ID: Arena> ArenaIterator for Living<'a, ID> {
+    type Arena = ID;
+}
+
+pub struct Ids<'a, ID> {
+    iter: Zip<std::slice::Iter<'a, Id<ID>>, bit_vec::Iter<'a>>,
+}
+
+impl<'a, ID> Iterator for Ids<'a, ID> {
+    type Item = Option<Valid<'a, &'a Id<ID>>>;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(
+            |(id, living)| {
+                if living {
+                    Some(Valid::new(id))
+                } else {
+                    None
+                }
+            },
+        )
+    }
+}
+
+impl<'a, ID: Arena> ArenaIterator for Ids<'a, ID> {
+    type Arena = ID;
 }
 
 #[cfg(test)]
