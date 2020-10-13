@@ -15,7 +15,7 @@ pub trait ValidEdge<A> {
 }
 
 pub trait ArenaIterator: IntoIterator + Sized {
-    type Arena: Arena;
+    type Arena;
 
     fn zip<U: ArenaIterator<Arena = Self::Arena>>(self, rhs: U) -> ArenaZip<Self::Arena, Self, U> {
         ArenaZip::new(self, rhs)
@@ -32,7 +32,7 @@ pub struct ArenaZip<ID, A, B> {
     marker: std::marker::PhantomData<ID>,
 }
 
-impl<ID: Arena, A: ArenaIterator<Arena = ID>, B: ArenaIterator<Arena = ID>> ArenaZip<ID, A, B> {
+impl<ID, A: ArenaIterator<Arena = ID>, B: ArenaIterator<Arena = ID>> ArenaZip<ID, A, B> {
     pub(crate) fn new(a: A, b: B) -> Self {
         Self {
             a,
@@ -42,7 +42,7 @@ impl<ID: Arena, A: ArenaIterator<Arena = ID>, B: ArenaIterator<Arena = ID>> Aren
     }
 }
 
-impl<ID: Arena, A: ArenaIterator<Arena = ID>, B: ArenaIterator<Arena = ID>> IntoIterator
+impl<ID, A: ArenaIterator<Arena = ID>, B: ArenaIterator<Arena = ID>> IntoIterator
     for ArenaZip<ID, A, B>
 {
     type Item = (A::Item, B::Item);
@@ -55,7 +55,6 @@ impl<ID: Arena, A: ArenaIterator<Arena = ID>, B: ArenaIterator<Arena = ID>> Into
 
 impl<ID, A, B> ArenaIterator for ArenaZip<ID, A, B>
 where
-    ID: Arena,
     A: ArenaIterator<Arena = ID>,
     B: ArenaIterator<Arena = ID>,
 {
