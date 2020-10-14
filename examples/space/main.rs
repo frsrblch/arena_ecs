@@ -4,7 +4,7 @@ use gen_id::*;
 use government::*;
 use state::*;
 use system::*;
-use typed_iter::IterOver;
+use typed_iter::{IterOver, Tuple as T};
 
 pub mod body;
 pub mod colony;

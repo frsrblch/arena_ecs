@@ -54,7 +54,7 @@ impl Colony {
             .zip(&mut self.food_supply_demand)
             .zip(&self.food_production)
             .zip(&self.population)
-            .for_each(|(((stocks, supply_demand), production), pop)| {
+            .for_each(|T(T(T(stocks, supply_demand), production), pop)| {
                 *supply_demand = production - 2.0 * pop;
                 *stocks -= *supply_demand;
             });
