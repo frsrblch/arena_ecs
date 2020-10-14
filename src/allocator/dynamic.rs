@@ -119,7 +119,7 @@ impl<ID> DynamicAllocator<ID> {
 }
 
 impl<ID: Arena<Allocator = DynamicAllocator<ID>>> DynamicAllocator<ID> {
-    pub fn zip_id_and_filter<'a, I: ArenaIterator + IntoIterator<Item = T> + 'a, T>(
+    pub fn zip_id_and_filter<'a, I: IterOver<Type = ID> + IntoIterator<Item = T> + 'a, T>(
         &self,
         iter: I,
     ) -> impl Iterator<Item = (T, Valid<&Id<ID>>)> {
@@ -128,7 +128,7 @@ impl<ID: Arena<Allocator = DynamicAllocator<ID>>> DynamicAllocator<ID> {
             .filter_map(|(t, id)| id.map(|id| (t, id)))
     }
 
-    pub fn filter_living<'a, I: ArenaIterator + IntoIterator<Item = T> + 'a, T>(
+    pub fn filter_living<'a, I: IterOver<Type = ID> + IntoIterator<Item = T> + 'a, T>(
         &'a self,
         iter: I,
     ) -> impl Iterator<Item = T> + 'a {
@@ -161,8 +161,8 @@ impl<'a, ID> IntoIterator for Living<'a, ID> {
     }
 }
 
-impl<'a, ID: Arena> ArenaIterator for Living<'a, ID> {
-    type Arena = ID;
+impl<'a, ID> IterOver for Living<'a, ID> {
+    type Type = ID;
 }
 
 pub struct Ids<'a, ID> {
@@ -184,8 +184,8 @@ impl<'a, ID> Iterator for Ids<'a, ID> {
     }
 }
 
-impl<'a, ID: Arena> ArenaIterator for Ids<'a, ID> {
-    type Arena = ID;
+impl<'a, ID> IterOver for Ids<'a, ID> {
+    type Type = ID;
 }
 
 #[cfg(test)]

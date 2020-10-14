@@ -3,6 +3,7 @@ pub use arena::*;
 pub use ids::*;
 pub use storage::*;
 pub use traits::*;
+use typed_iter::*;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

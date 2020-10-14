@@ -2,59 +2,59 @@ use crate::*;
 use std::marker::PhantomData;
 use std::ops::AddAssign;
 
-pub struct Iter<'a, ID, T> {
-    iter: std::slice::Iter<'a, T>,
-    marker: PhantomData<ID>,
-}
-
-impl<'a, ID, T> Iter<'a, ID, T> {
-    fn new(component: &'a Component<ID, T>) -> Self {
-        Self {
-            iter: component.values.iter(),
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<'a, ID, T> IntoIterator for Iter<'a, ID, T> {
-    type Item = &'a T;
-    type IntoIter = std::slice::Iter<'a, T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter
-    }
-}
-
-impl<ID: Arena, T> ArenaIterator for Iter<'_, ID, T> {
-    type Arena = ID;
-}
-
-pub struct IterMut<'a, ID, T> {
-    iter_mut: std::slice::IterMut<'a, T>,
-    marker: PhantomData<ID>,
-}
-
-impl<'a, ID, T> IterMut<'a, ID, T> {
-    fn new(component: &'a mut Component<ID, T>) -> Self {
-        Self {
-            iter_mut: component.values.iter_mut(),
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<'a, ID, T> IntoIterator for IterMut<'a, ID, T> {
-    type Item = &'a mut T;
-    type IntoIter = std::slice::IterMut<'a, T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter_mut
-    }
-}
-
-impl<ID: Arena, T> ArenaIterator for IterMut<'_, ID, T> {
-    type Arena = ID;
-}
+// pub struct Iter<'a, ID, T> {
+//     iter: std::slice::Iter<'a, T>,
+//     marker: PhantomData<ID>,
+// }
+//
+// impl<'a, ID, T> Iter<'a, ID, T> {
+//     pub fn new(iter: std::slice::Iter<'a, T>) -> Self {
+//         Self {
+//             iter,
+//             marker: PhantomData,
+//         }
+//     }
+// }
+//
+// impl<'a, ID, T> IntoIterator for Iter<'a, ID, T> {
+//     type Item = &'a T;
+//     type IntoIter = std::slice::Iter<'a, T>;
+//
+//     fn into_iter(self) -> Self::IntoIter {
+//         self.iter
+//     }
+// }
+//
+// impl<ID: Arena, T> ArenaIterator for Iter<'_, ID, T> {
+//     type Arena = ID;
+// }
+//
+// pub struct IterMut<'a, ID, T> {
+//     iter_mut: std::slice::IterMut<'a, T>,
+//     marker: PhantomData<ID>,
+// }
+//
+// impl<'a, ID, T> IterMut<'a, ID, T> {
+//     pub fn new(iter_mut: std::slice::IterMut<'a, T>) -> Self {
+//         Self {
+//             iter_mut,
+//             marker: PhantomData,
+//         }
+//     }
+// }
+//
+// impl<'a, ID, T> IntoIterator for IterMut<'a, ID, T> {
+//     type Item = &'a mut T;
+//     type IntoIter = std::slice::IterMut<'a, T>;
+//
+//     fn into_iter(self) -> Self::IntoIter {
+//         self.iter_mut
+//     }
+// }
+//
+// impl<ID: Arena, T> ArenaIterator for IterMut<'_, ID, T> {
+//     type Arena = ID;
+// }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
@@ -81,11 +81,11 @@ impl<ID, T> Component<ID, T> {
     }
 
     pub fn iter(&self) -> Iter<ID, T> {
-        Iter::new(self)
+        Iter::new(self.values.iter())
     }
 
     pub fn iter_mut(&mut self) -> IterMut<ID, T> {
-        IterMut::new(self)
+        IterMut::new(self.values.iter_mut())
     }
 
     pub fn len(&self) -> usize {
@@ -170,7 +170,7 @@ where
 
         let link = link.validate(alloc);
 
-        for (value, id) in component.zip(&link) {
+        for (value, id) in component.iter().zip(&link) {
             if let Some(id) = id {
                 *self.get_mut(id) += *value;
             }
@@ -196,22 +196,12 @@ impl<'a, ID, T> IntoIterator for &'a mut Component<ID, T> {
     }
 }
 
-impl<'a, ID: Arena, T> ArenaIterator for &'a Component<ID, T> {
-    type Arena = ID;
+impl<'a, ID, T> IterOver for &'a Component<ID, T> {
+    type Type = ID;
 }
 
-impl<'a, ID: Arena, T> ArenaIterator for &'a mut Component<ID, T> {
-    type Arena = ID;
-}
-
-impl<ID: Arena, T> Component<ID, T> {
-    pub fn zip<A: ArenaIterator<Arena = ID>>(&self, rhs: A) -> ArenaZip<ID, &Self, A> {
-        ArenaZip::new(self, rhs)
-    }
-
-    pub fn zip_mut<A: ArenaIterator<Arena = ID>>(&mut self, rhs: A) -> ArenaZip<ID, &mut Self, A> {
-        ArenaZip::new(self, rhs)
-    }
+impl<'a, ID, T> IterOver for &'a mut Component<ID, T> {
+    type Type = ID;
 }
 
 #[cfg(feature = "rayon")]

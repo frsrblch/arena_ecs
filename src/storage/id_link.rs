@@ -129,6 +129,6 @@ impl<'a, A, B> IntoIterator for &'a Valid<'a, &IdLink<A, B>> {
     }
 }
 
-impl<'a, A: Arena, B> ArenaIterator for &'a Valid<'a, &IdLink<A, B>> {
-    type Arena = A;
+impl<'a, A, B> IterOver for &'a Valid<'a, &'a IdLink<A, B>> {
+    type Type = A;
 }

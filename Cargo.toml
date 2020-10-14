@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 bit-vec = { version = "0.6", features = ['serde'] }
 fnv = "1.0"
+typed_iter = { git = "https://github.com/frsrblch/typed_iter" }
 
 [dependencies.rayon]
 version = "1.3"

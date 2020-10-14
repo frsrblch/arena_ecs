@@ -1,9 +1,9 @@
 pub use component::*;
-pub use map::*;
 pub use graph::*;
-pub use id_link::*;
+pub use id_link::IdLink;
+pub use map::*;
 
 mod component;
-mod map;
 mod graph;
 mod id_link;
+mod map;
