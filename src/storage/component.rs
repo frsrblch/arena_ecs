@@ -152,7 +152,7 @@ where
     ) {
         self.fill_with(Default::default);
 
-        component.zip(link).for_each(|Tuple(value, id)| {
+        component.zip(link).for_each(|(value, id)| {
             if let Some(id) = alloc.validate(*id) {
                 let self_value = self.get_mut(id);
                 *self_value += *value;
@@ -170,7 +170,7 @@ where
 
         let link = link.validate(alloc);
 
-        for Tuple(value, id) in component.iter().zip(&link) {
+        for (value, id) in component.iter().zip(&link) {
             if let Some(id) = id {
                 *self.get_mut(id) += *value;
             }

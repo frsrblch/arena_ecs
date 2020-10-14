@@ -20,7 +20,7 @@ impl State {
         self.colony
             .alloc
             .filter_living(iter)
-            .for_each(|T(T(colony, pop), govt_id)| {
+            .for_each(|((colony, pop), govt_id)| {
                 if let Some(govt_id) = self.government.alloc.validate(*govt_id) {
                     let govt = self.government.name.get(govt_id);
                     println!("{} ({}): {}", colony, govt, pop);

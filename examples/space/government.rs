@@ -40,7 +40,7 @@ impl Government {
                     .map(move |t2| (t1, t2))
             });
 
-        for ((T(g1, b1), c1), (T(g2, b2), c2)) in iter_pairs {
+        for (((g1, b1), c1), ((g2, b2), c2)) in iter_pairs {
             if g1 == g2 {
                 if let Some(govt) = self.alloc.validate(*g1) {
                     let distance = bodies.get_distance(*b1, *b2);
