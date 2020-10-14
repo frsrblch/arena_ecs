@@ -13,6 +13,7 @@ impl State {
         let iter = self
             .colony
             .name
+            .iter()
             .zip(&self.colony.population)
             .zip(&self.colony.government);
 

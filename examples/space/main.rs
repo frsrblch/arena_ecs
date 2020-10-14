@@ -1,15 +1,16 @@
+use body::*;
+use colony::*;
 use gen_id::*;
+use government::*;
 use state::*;
 use system::*;
-use body::*;
-use government::*;
-use colony::*;
+use typed_iter::IterOver;
 
+pub mod body;
+pub mod colony;
+pub mod government;
 pub mod state;
 pub mod system;
-pub mod body;
-pub mod government;
-pub mod colony;
 
 fn main() {
     let mut state = State::default();
@@ -32,8 +33,8 @@ fn main() {
             orbit: OrbitParams {
                 period: 365.25 * 24.0 * 60.0 * 60.0,
                 radius: 149.6e9,
-                offset: 0.0
-            }
+                offset: 0.0,
+            },
         },
         moons: vec![BodyRow {
             name: "Luna".to_string(),
@@ -43,7 +44,7 @@ fn main() {
             orbit: OrbitParams {
                 period: 27.322 * 24.0 * 60.0 * 60.0,
                 radius: 3.48e8,
-                offset: 0.0
+                offset: 0.0,
             },
         }],
     };
