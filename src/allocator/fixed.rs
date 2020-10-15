@@ -1,7 +1,7 @@
 use crate::*;
 use std::marker::PhantomData;
 
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct FixedAllocator<A> {
     next_index: u32,
@@ -15,10 +15,8 @@ impl<A> FixedAllocator<A> {
         Id::first(index)
     }
 
-    pub fn ids(&self) -> impl Iterator<Item = Id<A>> {
-        (0..self.next_index)
-            .into_iter()
-            .map(Id::first)
+    pub fn ids(&self) -> Ids<A> {
+        Ids::new(self)
     }
 }
 
@@ -29,6 +27,32 @@ impl<A> Default for FixedAllocator<A> {
             marker: PhantomData,
         }
     }
+}
+
+pub struct Ids<'a, ID> {
+    range: std::ops::Range<u32>,
+    marker: PhantomData<&'a ID>,
+}
+
+impl<'a, ID> Ids<'a, ID> {
+    pub fn new(alloc: &'a FixedAllocator<ID>) -> Self {
+        Self {
+            range: (0..alloc.next_index),
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<ID> Iterator for Ids<'_, ID> {
+    type Item = Id<ID>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.range.next().map(Id::first)
+    }
+}
+
+impl<ID> IterOver for Ids<'_, ID> {
+    type Type = ID;
 }
 
 #[cfg(test)]
