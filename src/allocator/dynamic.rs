@@ -110,11 +110,8 @@ impl<ID> DynamicAllocator<ID> {
         Living::new(self)
     }
 
-    pub fn ids<'a>(&'a self) -> impl Iterator<Item = Option<Valid<'a, &'a Id<ID>>>> + 'a {
-        self.current_gen
-            .iter()
-            .zip(self.living.iter())
-            .map(|(id, live)| if live { Some(Valid::new(id)) } else { None })
+    pub fn ids(&self) -> Ids<ID> {
+        Ids::new(self)
     }
 }
 
@@ -123,8 +120,8 @@ impl<ID: Arena<Allocator = DynamicAllocator<ID>>> DynamicAllocator<ID> {
         &self,
         iter: I,
     ) -> impl Iterator<Item = (T, Valid<&Id<ID>>)> {
-        iter.into_iter()
-            .zip(self.ids())
+        iter.zip(self.ids())
+            .into_iter()
             .filter_map(|(t, id)| id.map(|id| (t, id)))
     }
 
@@ -132,8 +129,8 @@ impl<ID: Arena<Allocator = DynamicAllocator<ID>>> DynamicAllocator<ID> {
         &'a self,
         iter: I,
     ) -> impl Iterator<Item = T> + 'a {
-        iter.into_iter()
-            .zip(self.living.iter())
+        iter.zip(self.living())
+            .into_iter()
             .filter_map(|(t, alive)| if alive { Some(t) } else { None })
     }
 }
@@ -167,6 +164,14 @@ impl<'a, ID> IterOver for Living<'a, ID> {
 
 pub struct Ids<'a, ID> {
     iter: Zip<std::slice::Iter<'a, Id<ID>>, bit_vec::Iter<'a>>,
+}
+
+impl<'a, ID> Ids<'a, ID> {
+    fn new(alloc: &'a DynamicAllocator<ID>) -> Self {
+        Self {
+            iter: alloc.current_gen.iter().zip(alloc.living.iter()),
+        }
+    }
 }
 
 impl<'a, ID> Iterator for Ids<'a, ID> {
