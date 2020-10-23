@@ -51,8 +51,8 @@ impl<ID> Iterator for Ids<'_, ID> {
     }
 }
 
-impl<ID> IterOver for Ids<'_, ID> {
-    type Type = ID;
+impl<ID> TypedIterator for Ids<'_, ID> {
+    type Context = ID;
 }
 
 #[cfg(test)]

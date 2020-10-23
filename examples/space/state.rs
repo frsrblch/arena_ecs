@@ -14,8 +14,8 @@ impl State {
             .colony
             .name
             .iter()
-            .zip(&self.colony.population)
-            .zip(&self.colony.government);
+            .zip(self.colony.population.iter())
+            .zip(self.colony.government.iter());
 
         self.colony
             .alloc

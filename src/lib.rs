@@ -1,5 +1,6 @@
 pub use allocator::*;
 pub use arena::*;
+use fnv::FnvHashMap as HashMap;
 pub use ids::*;
 pub use storage::*;
 pub use traits::*;

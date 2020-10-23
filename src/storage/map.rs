@@ -1,8 +1,6 @@
 use crate::*;
-use fnv::{FnvHashMap as HashMap};
 
-
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct IdMap<ID, T> {
     map: HashMap<Id<ID>, T>,
@@ -81,19 +79,19 @@ impl<ID, T> IdMap<ID, T> {
         self.map.clear()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item=(&Id<ID>, &T)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&Id<ID>, &T)> {
         self.map.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item=(&Id<ID>, &mut T)> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&Id<ID>, &mut T)> {
         self.map.iter_mut()
     }
 
-    pub fn values(&self) -> impl Iterator<Item=&T> {
+    pub fn values(&self) -> impl Iterator<Item = &T> {
         self.map.values()
     }
 
-    pub fn values_mut(&mut self) -> impl Iterator<Item=&mut T> {
+    pub fn values_mut(&mut self) -> impl Iterator<Item = &mut T> {
         self.map.values_mut()
     }
 }
@@ -134,7 +132,7 @@ impl<ID: Arena<Allocator = DynamicAllocator<ID>>, T> IdMap<ID, T> {
 }
 
 impl<'a, ID, T> Valid<'a, &'a IdMap<ID, T>> {
-    pub fn iter(&'a self) -> impl Iterator<Item=(Valid<'a, &Id<ID>>, &T)> {
+    pub fn iter(&'a self) -> impl Iterator<Item = (Valid<'a, &Id<ID>>, &T)> {
         self.value
             .map
             .iter()
@@ -143,7 +141,7 @@ impl<'a, ID, T> Valid<'a, &'a IdMap<ID, T>> {
 }
 
 impl<'a, ID, T> Valid<'a, &mut IdMap<ID, T>> {
-    pub fn iter_mut(&mut self) -> impl Iterator<Item=(Valid<'_, &Id<ID>>, &mut T)> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (Valid<'_, &Id<ID>>, &mut T)> {
         self.value
             .map
             .iter_mut()
