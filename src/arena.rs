@@ -1,5 +1,5 @@
 use crate::*;
-use std::fmt::{Result, Display, Formatter};
+use std::fmt::{Display, Formatter, Result};
 
 pub trait Arena {
     type Allocator;

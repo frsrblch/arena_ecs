@@ -5,25 +5,21 @@ pub(crate) struct Gen(NonZeroU8);
 
 impl Default for Gen {
     fn default() -> Self {
-        // SAFETY: 1 != 0
-        unsafe {
-            Self::from_u8_unchecked(1)
-        }
+        Self::first()
     }
 }
 
 impl Gen {
-    #[allow(dead_code)]
-    pub fn from_u8(gen: u8) -> Option<Self> {
-        NonZeroU8::new(gen)
-            .map(Gen)
-    }
-
-    pub unsafe fn from_u8_unchecked(gen: u8) -> Self {
-        Self(NonZeroU8::new_unchecked(gen))
+    pub(crate) fn first() -> Self {
+        Self(NonZeroU8::new(1).unwrap())
     }
 
     pub fn as_u32(&self) -> u32 {
         self.0.get() as u32
+    }
+
+    #[cfg(test)]
+    pub(crate) fn from_u8(value: u8) -> Option<Self> {
+        NonZeroU8::new(value).map(Gen)
     }
 }

@@ -1,13 +1,13 @@
 use super::*;
-use std::cmp::Ordering;
-use std::num::NonZeroU32;
-use std::marker::PhantomData;
 use crate::ids::gen::Gen;
+use std::cmp::Ordering;
+use std::marker::PhantomData;
+use std::num::NonZeroU32;
 
 /// A 4-byte generational index that stores the generation in the first byte, and the index in the last 3 bytes.
 /// Stores the generation in the first 8 bits, and the index in the last 24 bits.
 /// The generation is a NonZeroU8, so the bits are always a valid NonZeroU32.
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct Id<A> {
     bits: NonZeroU32,
@@ -26,7 +26,7 @@ impl<A> Id<A> {
     fn from_non_zero_u32(bits: NonZeroU32) -> Self {
         Self {
             bits,
-            marker: PhantomData
+            marker: PhantomData,
         }
     }
 
@@ -48,7 +48,7 @@ impl<A> Id<A> {
         // gen cannot overflow 8 bits (255) and cannot be zero
         let gen = match gen {
             255 => 1,
-            gen => gen + 1
+            gen => gen + 1,
         };
 
         // SAFETY: gen is always greater than zero, so index | gen is always greater than zero

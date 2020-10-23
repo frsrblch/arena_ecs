@@ -2,60 +2,6 @@ use crate::*;
 use std::marker::PhantomData;
 use std::ops::AddAssign;
 
-// pub struct Iter<'a, ID, T> {
-//     iter: std::slice::Iter<'a, T>,
-//     marker: PhantomData<ID>,
-// }
-//
-// impl<'a, ID, T> Iter<'a, ID, T> {
-//     pub fn new(iter: std::slice::Iter<'a, T>) -> Self {
-//         Self {
-//             iter,
-//             marker: PhantomData,
-//         }
-//     }
-// }
-//
-// impl<'a, ID, T> IntoIterator for Iter<'a, ID, T> {
-//     type Item = &'a T;
-//     type IntoIter = std::slice::Iter<'a, T>;
-//
-//     fn into_iter(self) -> Self::IntoIter {
-//         self.iter
-//     }
-// }
-//
-// impl<ID: Arena, T> ArenaIterator for Iter<'_, ID, T> {
-//     type Arena = ID;
-// }
-//
-// pub struct IterMut<'a, ID, T> {
-//     iter_mut: std::slice::IterMut<'a, T>,
-//     marker: PhantomData<ID>,
-// }
-//
-// impl<'a, ID, T> IterMut<'a, ID, T> {
-//     pub fn new(iter_mut: std::slice::IterMut<'a, T>) -> Self {
-//         Self {
-//             iter_mut,
-//             marker: PhantomData,
-//         }
-//     }
-// }
-//
-// impl<'a, ID, T> IntoIterator for IterMut<'a, ID, T> {
-//     type Item = &'a mut T;
-//     type IntoIter = std::slice::IterMut<'a, T>;
-//
-//     fn into_iter(self) -> Self::IntoIter {
-//         self.iter_mut
-//     }
-// }
-//
-// impl<ID: Arena, T> ArenaIterator for IterMut<'_, ID, T> {
-//     type Arena = ID;
-// }
-
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct Component<ID, T> {
@@ -125,17 +71,13 @@ impl<ID, T> Component<ID, T> {
     }
 
     pub fn fill_with<F: FnMut() -> T>(&mut self, mut f: F) {
-        for v in self.iter_mut() {
-            *v = f();
-        }
+        self.iter_mut().for_each(|v| *v = f());
     }
 }
 
 impl<ID, T: Clone> Component<ID, T> {
     pub fn fill(&mut self, value: T) {
-        for v in self.iter_mut() {
-            *v = value.clone();
-        }
+        self.iter_mut().for_each(|v| *v = value.clone());
     }
 }
 

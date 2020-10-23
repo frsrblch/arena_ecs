@@ -38,7 +38,9 @@ impl<A> PartialOrd for Edge<A> {
 
 impl<A> Ord for Edge<A> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.from.cmp(&other.from).then_with(|| self.to.cmp(&other.to))
+        self.from
+            .cmp(&other.from)
+            .then_with(|| self.to.cmp(&other.to))
     }
 }
 
@@ -53,14 +55,14 @@ impl<A> Clone for Edge<A> {
     fn clone(&self) -> Self {
         Self {
             from: self.from,
-            to: self.to
+            to: self.to,
         }
     }
 }
 
 impl<A> Copy for Edge<A> {}
 
-impl<A: Arena<Allocator=DynamicAllocator<A>>> Edge<A> {
+impl<A: Arena<Allocator = DynamicAllocator<A>>> Edge<A> {
     pub fn is_alive(&self, allocator: &Allocator<A>) -> bool {
         allocator.is_alive(self.from) && allocator.is_alive(self.to)
     }
@@ -74,7 +76,7 @@ impl<A: Arena<Allocator=DynamicAllocator<A>>> Edge<A> {
     }
 }
 
-impl<A: Arena<Allocator=FixedAllocator<A>>> ValidEdge<A> for Edge<A> {
+impl<A: Arena<Allocator = FixedAllocator<A>>> ValidEdge<A> for Edge<A> {
     type Id = Id<A>;
 
     fn edge(&self) -> Edge<A> {
@@ -90,7 +92,7 @@ impl<A: Arena<Allocator=FixedAllocator<A>>> ValidEdge<A> for Edge<A> {
     }
 }
 
-impl<'a, A: Arena<Allocator=FixedAllocator<A>>> ValidEdge<A> for &'a Edge<A> {
+impl<'a, A: Arena<Allocator = FixedAllocator<A>>> ValidEdge<A> for &'a Edge<A> {
     type Id = Id<A>;
 
     fn edge(&self) -> Edge<A> {
@@ -106,7 +108,7 @@ impl<'a, A: Arena<Allocator=FixedAllocator<A>>> ValidEdge<A> for &'a Edge<A> {
     }
 }
 
-impl<'a, A: Arena<Allocator=DynamicAllocator<A>>> ValidEdge<A> for Valid<'a, Edge<A>> {
+impl<'a, A: Arena<Allocator = DynamicAllocator<A>>> ValidEdge<A> for Valid<'a, Edge<A>> {
     type Id = Valid<'a, Id<A>>;
 
     fn edge(&self) -> Edge<A> {
@@ -122,7 +124,7 @@ impl<'a, A: Arena<Allocator=DynamicAllocator<A>>> ValidEdge<A> for Valid<'a, Edg
     }
 }
 
-impl<'a, 'b, A: Arena<Allocator=DynamicAllocator<A>>> ValidEdge<A> for &'a Valid<'b, Edge<A>> {
+impl<'a, 'b, A: Arena<Allocator = DynamicAllocator<A>>> ValidEdge<A> for &'a Valid<'b, Edge<A>> {
     type Id = Valid<'b, Id<A>>;
 
     fn edge(&self) -> Edge<A> {

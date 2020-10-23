@@ -15,7 +15,7 @@ impl<'a, T> Valid<'a, T> {
     pub(crate) fn new(value: T) -> Self {
         Self {
             value,
-            marker: PhantomData
+            marker: PhantomData,
         }
     }
 }

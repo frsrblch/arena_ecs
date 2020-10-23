@@ -15,10 +15,10 @@ impl<A, W: PartialOrd> Graph<A, W> {
                 if weight < *o.get() {
                     o.insert(weight);
                 }
-            },
+            }
             Entry::Vacant(v) => {
                 v.insert(weight);
-            },
+            }
         }
     }
 
@@ -28,10 +28,10 @@ impl<A, W: PartialOrd> Graph<A, W> {
                 if weight > *o.get() {
                     o.insert(weight);
                 }
-            },
+            }
             Entry::Vacant(v) => {
                 v.insert(weight);
-            },
+            }
         }
     }
 }
@@ -42,7 +42,10 @@ impl<A, W> Graph<A, W> {
     }
 
     pub fn insert_ids<I: ValidId<A>>(&mut self, from: I, to: I, weight: W) {
-        let key = Edge { from: from.id(), to: to.id() };
+        let key = Edge {
+            from: from.id(),
+            to: to.id(),
+        };
         self.edges.insert(key, weight);
     }
 
@@ -67,15 +70,16 @@ impl<A, W> Graph<A, W> {
         self.edges.clear();
     }
 
-    pub fn get_edges_from<I: ValidId<A>>(&self, node: I) -> impl Iterator<Item=(&Edge<A>, &W)> + '_ {
+    pub fn get_edges_from<I: ValidId<A>>(
+        &self,
+        node: I,
+    ) -> impl Iterator<Item = (&Edge<A>, &W)> + '_ {
         let node = node.id();
-        self.edges
-            .iter()
-            .filter(move |&(e, _)| e.from == node)
+        self.edges.iter().filter(move |&(e, _)| e.from == node)
     }
 }
 
-impl<A: Arena<Allocator=DynamicAllocator<A>>, W> Graph<A, W> {
+impl<A: Arena<Allocator = DynamicAllocator<A>>, W> Graph<A, W> {
     pub fn kill(&mut self, id: Id<A>) {
         self.edges.retain(|edge, _| !edge.contains(id));
 
@@ -117,24 +121,14 @@ impl<A: Arena<Allocator=DynamicAllocator<A>>, W> Graph<A, W> {
 }
 
 impl<'a, A, W> Valid<'_, &'a Graph<A, W>> {
-    pub fn iter(&self) -> impl Iterator<Item=(Valid<&'a Edge<A>>, &W)> {
-        self.value
-            .edges
-            .iter()
-            .map(|(e, w)| {
-                (Valid::new(e), w)
-            })
+    pub fn iter(&self) -> impl Iterator<Item = (Valid<&'a Edge<A>>, &W)> {
+        self.value.edges.iter().map(|(e, w)| (Valid::new(e), w))
     }
 }
 
 impl<'a, A, W> Valid<'_, &'a mut Graph<A, W>> {
-    pub fn iter_mut(&mut self) -> impl Iterator<Item=(Valid<&Edge<A>>, &mut W)> {
-        self.value
-            .edges
-            .iter_mut()
-            .map(|(e, w)| {
-                (Valid::new(e), w)
-            })
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (Valid<&Edge<A>>, &mut W)> {
+        self.value.edges.iter_mut().map(|(e, w)| (Valid::new(e), w))
     }
 }
 
@@ -146,7 +140,7 @@ mod tests {
     #[test]
     fn insert_min_if_vacant() {
         let mut alloc = Allocator::<FixedArena>::default();
-        let mut graph = Graph::<FixedArena<>, u32>::default();
+        let mut graph = Graph::<FixedArena, u32>::default();
 
         let from = alloc.create();
         let to = alloc.create();
@@ -160,7 +154,7 @@ mod tests {
     #[test]
     fn insert_min_if_occupied_and_greater() {
         let mut alloc = Allocator::<FixedArena>::default();
-        let mut graph = Graph::<FixedArena<>, u32>::default();
+        let mut graph = Graph::<FixedArena, u32>::default();
 
         let from = alloc.create();
         let to = alloc.create();
@@ -176,7 +170,7 @@ mod tests {
     #[test]
     fn insert_min_if_occupied_and_lesser() {
         let mut alloc = Allocator::<FixedArena>::default();
-        let mut graph = Graph::<FixedArena<>, u32>::default();
+        let mut graph = Graph::<FixedArena, u32>::default();
 
         let from = alloc.create();
         let to = alloc.create();
@@ -192,7 +186,7 @@ mod tests {
     #[test]
     fn insert_max_if_vacant() {
         let mut alloc = Allocator::<FixedArena>::default();
-        let mut graph = Graph::<FixedArena<>, u32>::default();
+        let mut graph = Graph::<FixedArena, u32>::default();
 
         let from = alloc.create();
         let to = alloc.create();
@@ -206,7 +200,7 @@ mod tests {
     #[test]
     fn insert_max_if_occupied_and_greater() {
         let mut alloc = Allocator::<FixedArena>::default();
-        let mut graph = Graph::<FixedArena<>, u32>::default();
+        let mut graph = Graph::<FixedArena, u32>::default();
 
         let from = alloc.create();
         let to = alloc.create();
@@ -222,7 +216,7 @@ mod tests {
     #[test]
     fn insert_max_if_occupied_and_lesser() {
         let mut alloc = Allocator::<FixedArena>::default();
-        let mut graph = Graph::<FixedArena<>, u32>::default();
+        let mut graph = Graph::<FixedArena, u32>::default();
 
         let from = alloc.create();
         let to = alloc.create();
