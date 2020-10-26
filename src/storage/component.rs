@@ -2,7 +2,7 @@ use crate::*;
 use std::marker::PhantomData;
 use std::ops::AddAssign;
 
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+// #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct Component<ID, T> {
     values: Vec<T>,

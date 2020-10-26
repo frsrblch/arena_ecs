@@ -8,8 +8,8 @@ pub trait Arena {
 #[macro_export]
 macro_rules! fixed_arena {
     ($arena:ty) => {
-        impl Arena for $arena {
-            type Allocator = FixedAllocator<Self>;
+        impl $crate::Arena for $arena {
+            type Allocator = $crate::FixedAllocator<Self>;
         }
     };
 }
@@ -17,8 +17,8 @@ macro_rules! fixed_arena {
 #[macro_export]
 macro_rules! dynamic_arena {
     ($arena:ty) => {
-        impl Arena for $arena {
-            type Allocator = DynamicAllocator<Self>;
+        impl $crate::Arena for $arena {
+            type Allocator = $crate::DynamicAllocator<Self>;
         }
     };
 }

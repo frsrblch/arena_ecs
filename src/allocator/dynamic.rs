@@ -3,7 +3,7 @@ use bit_vec::BitVec;
 use std::iter::Zip;
 use std::marker::PhantomData;
 
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+// #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct DynamicAllocator<ID> {
     current_gen: Vec<Id<ID>>,

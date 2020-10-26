@@ -7,7 +7,7 @@ use std::num::NonZeroU32;
 /// A 4-byte generational index that stores the generation in the first byte, and the index in the last 3 bytes.
 /// Stores the generation in the first 8 bits, and the index in the last 24 bits.
 /// The generation is a NonZeroU8, so the bits are always a valid NonZeroU32.
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+// #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct Id<A> {
     bits: NonZeroU32,

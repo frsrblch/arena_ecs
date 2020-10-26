@@ -1,7 +1,7 @@
 use crate::*;
 use std::marker::PhantomData;
 
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+// #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct FixedAllocator<A> {
     next_index: u32,

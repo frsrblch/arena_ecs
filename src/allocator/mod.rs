@@ -6,7 +6,7 @@ use std::ops::{Deref, DerefMut};
 mod dynamic;
 mod fixed;
 
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+// #[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct Allocator<A: Arena> {
     allocator: A::Allocator,

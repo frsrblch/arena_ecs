@@ -1,6 +1,6 @@
 use crate::*;
 
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+// #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct IdMap<ID, T> {
     map: HashMap<Id<ID>, T>,

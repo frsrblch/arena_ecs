@@ -18,6 +18,10 @@ impl<'a, T> Valid<'a, T> {
             marker: PhantomData,
         }
     }
+
+    pub fn assert(value: T) -> Self {
+        Self::new(value)
+    }
 }
 
 impl<A> ValidId<A> for Valid<'_, Id<A>> {
