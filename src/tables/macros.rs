@@ -46,7 +46,7 @@ macro_rules! table_array {
                 let indices = &mut self.indices;
                 match row {
                     $(
-                        $row_enum::$variant(row) => self.$field.insert(id, row, indices),
+                        $row_enum::$variant(row) => { self.$field.insert(id, row, indices); },
                     )*
                 };
             }
@@ -249,6 +249,11 @@ mod tests {
                     type Row = IdleRow;
                     location: Id<Colony>,
                     arrival: Time,
+                },
+                moving: Moving {
+                    type Row = MovingRow;
+                    from: Id<Colony>,
+                    to: Id<Colony>,
                 },
             }
             transitions {}
