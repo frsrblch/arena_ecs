@@ -222,53 +222,56 @@ macro_rules! table {
     }
 }
 
-use crate::*;
+#[cfg(test)]
+mod tests {
+    use crate::*;
 
-#[derive(Debug)]
-pub struct Colony;
+    #[derive(Debug)]
+    pub struct Colony;
 
-fixed_arena!(Colony);
+    fixed_arena!(Colony);
 
-#[derive(Debug)]
-pub struct Freighter;
+    #[derive(Debug)]
+    pub struct Freighter;
 
-fixed_arena!(Freighter);
+    fixed_arena!(Freighter);
 
-#[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
-pub struct Time(f64);
+    #[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
+    pub struct Time(f64);
 
-table_array! {
-    struct FreighterState {
-        type Arena = Freighter;
-        type RowEnum = FreighterStateRow;
-        type IndexEnum = FreighterStateIndex;
-        tables {
-            idle: Idle {
-                type Row = IdleRow;
-                location: Id<Colony>,
-                arrival: Time,
-            },
+    table_array! {
+        struct FreighterState {
+            type Arena = Freighter;
+            type RowEnum = FreighterStateRow;
+            type IndexEnum = FreighterStateIndex;
+            tables {
+                idle: Idle {
+                    type Row = IdleRow;
+                    location: Id<Colony>,
+                    arrival: Time,
+                },
+            }
+            transitions {}
         }
-        transitions {}
     }
-}
 
-#[test]
-fn test() {
-    let mut a = Allocator::<Freighter>::default();
-    let mut colonies = Allocator::<Colony>::default();
-    let mut s = FreighterState::default();
+    #[test]
+    fn test() {
+        let mut a = Allocator::<Freighter>::default();
+        let mut colonies = Allocator::<Colony>::default();
+        let mut s = FreighterState::default();
 
-    let c = colonies.create();
-    let id = a.create();
-    s.insert_row(
-        id,
-        IdleRow {
-            id: id.id(),
-            location: c,
-            arrival: Time(0.0),
-        },
-    );
+        let c = colonies.create();
+        let id = a.create();
+        s.insert_row(
+            id,
+            IdleRow {
+                id: id.id(),
+                location: c,
+                arrival: Time(0.0),
+            },
+        );
 
-    // panic!("{:#?}", s);
+        // panic!("{:#?}", s);
+    }
 }
