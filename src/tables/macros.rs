@@ -7,7 +7,7 @@ macro_rules! table_array {
             type IndexEnum = $index_enum:ident;
             tables {
                 $(
-                    struct $field:ident: $variant:ident {
+                    $field:ident: $variant:ident {
                         type Row = $v_row:ident;
                         $(
                             $v_field:ident: $v_t:ty,
