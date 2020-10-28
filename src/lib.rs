@@ -3,8 +3,8 @@ pub use arena::*;
 use fnv::FnvHashMap as HashMap;
 pub use ids::*;
 pub use storage::*;
-pub use traits::*;
 pub use tables::*;
+pub use traits::*;
 use typed_iter::*;
 
 // #[cfg(feature = "serde")]
@@ -17,5 +17,5 @@ mod allocator;
 mod arena;
 mod ids;
 mod storage;
-mod traits;
 mod tables;
+mod traits;

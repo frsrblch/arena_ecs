@@ -61,12 +61,7 @@ impl Body {
         id
     }
 
-    fn insert(
-        &mut self,
-        id: Id<Self>,
-        body: BodyRow,
-        links: BodyLinks,
-    ) {
+    fn insert(&mut self, id: Id<Self>, body: BodyRow, links: BodyLinks) {
         self.name.insert(id, body.name);
         self.mass.insert(id, body.mass);
         self.radius.insert(id, body.radius);
@@ -76,10 +71,10 @@ impl Body {
         match links.orbit {
             Orbit::Planet => {
                 self.planet_orbit.insert(id, body.orbit);
-            },
+            }
             Orbit::Moon { parent } => {
                 self.moon_orbit.insert(id, body.orbit.moon(parent));
-            },
+            }
         }
 
         self.position.insert(id, Default::default());
@@ -93,32 +88,28 @@ impl Body {
     fn update_planet_orbits(&mut self, time: f64) {
         let positions = &mut self.position;
 
-        self.planet_orbit
-            .iter()
-            .for_each(|(body, orbit)| {
-                let orbit_fraction = time / orbit.period + orbit.offset;
-                let angle = orbit_fraction * Self::TWO_PI;
+        self.planet_orbit.iter().for_each(|(body, orbit)| {
+            let orbit_fraction = time / orbit.period + orbit.offset;
+            let angle = orbit_fraction * Self::TWO_PI;
 
-                let pos = positions.get_mut(body);
-                pos.0 = angle.sin();
-                pos.1 = angle.cos();
-            });
+            let pos = positions.get_mut(body);
+            pos.0 = angle.sin();
+            pos.1 = angle.cos();
+        });
     }
 
     fn update_moon_orbits(&mut self, time: f64) {
         let positions = &mut self.position;
 
-        self.moon_orbit
-            .iter()
-            .for_each(|(body, orbit)| {
-                let orbit_fraction = time / orbit.period + orbit.offset;
-                let angle = orbit_fraction * Self::TWO_PI;
+        self.moon_orbit.iter().for_each(|(body, orbit)| {
+            let orbit_fraction = time / orbit.period + orbit.offset;
+            let angle = orbit_fraction * Self::TWO_PI;
 
-                let parent_pos = *positions.get(orbit.parent);
-                let pos = positions.get_mut(body);
-                pos.0 = parent_pos.0 + angle.sin();
-                pos.1 = parent_pos.1 + angle.cos();
-            });
+            let parent_pos = *positions.get(orbit.parent);
+            let pos = positions.get_mut(body);
+            pos.0 = parent_pos.0 + angle.sin();
+            pos.1 = parent_pos.1 + angle.cos();
+        });
     }
 
     const TWO_PI: f64 = PI * 2.0;

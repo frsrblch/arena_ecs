@@ -12,7 +12,7 @@ pub struct Allocator<A: Arena> {
     allocator: A::Allocator,
 }
 
-impl<A: Arena<Allocator=ALLOCATOR>, ALLOCATOR: Default> Default for Allocator<A> {
+impl<A: Arena<Allocator = ALLOCATOR>, ALLOCATOR: Default> Default for Allocator<A> {
     fn default() -> Self {
         Self {
             allocator: ALLOCATOR::default(),

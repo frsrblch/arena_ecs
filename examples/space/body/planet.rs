@@ -8,10 +8,14 @@ pub struct Planet {
 
 impl State {
     pub fn create_planet(&mut self, planet: Planet, system: Id<System>) -> PlanetIds {
-        let links = BodyLinks { system, orbit: Orbit::Planet };
+        let links = BodyLinks {
+            system,
+            orbit: Orbit::Planet,
+        };
         let body = self.body.create(planet.body, links);
 
-        let moons = planet.moons
+        let moons = planet
+            .moons
             .into_iter()
             .map(|moon| {
                 let links = BodyLinks {
