@@ -4,7 +4,7 @@ use crate::*;
 #[derive(Debug)]
 pub struct IdMap<ID, T> {
     map: HashMap<Id<ID>, T>,
-    generation: u64,
+    generation: AllocGen<ID>,
 }
 
 impl<ID, T: Clone> Clone for IdMap<ID, T> {
@@ -20,7 +20,7 @@ impl<ID, T> Default for IdMap<ID, T> {
     fn default() -> Self {
         Self {
             map: HashMap::default(),
-            generation: 0,
+            generation: AllocGen::default(),
         }
     }
 }
@@ -29,14 +29,14 @@ impl<ID, T> IdMap<ID, T> {
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             map: HashMap::with_capacity_and_hasher(capacity, Default::default()),
-            generation: 0,
+            generation: AllocGen::default(),
         }
     }
 
     /// Inserts a possibly-invalid Id and Value into the hashmap. Resets the IdMap's generation value.
     pub fn insert_unvalidated(&mut self, id: Id<ID>, value: T) {
         self.map.insert(id, value);
-        self.generation = 0;
+        self.generation = AllocGen::default();
     }
 
     /// Inserts a valid Id and Value into the hashmap. Does not reset the IdMap's generation value.
@@ -68,7 +68,7 @@ impl<ID, T> IdMap<ID, T> {
 
     pub fn kill(&mut self, id: Id<ID>) {
         self.remove(id);
-        self.generation += 1;
+        self.generation.increment();
     }
 
     pub fn retain<F: FnMut(&Id<ID>, &mut T) -> bool>(&mut self, f: F) {

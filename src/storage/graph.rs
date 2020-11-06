@@ -5,7 +5,7 @@ use std::collections::hash_map::Entry;
 #[derive(Debug, Default)]
 pub struct Graph<A, W> {
     edges: HashMap<Edge<A>, W>,
-    generation: u64,
+    generation: AllocGen<A>,
 }
 
 impl<A, W: PartialOrd> Graph<A, W> {
@@ -79,55 +79,49 @@ impl<A, W> Graph<A, W> {
     }
 }
 
-impl<A: Arena<Allocator = DynamicAllocator<A>>, W> Graph<A, W> {
-    pub fn kill(&mut self, id: Id<A>) {
-        self.edges.retain(|edge, _| !edge.contains(id));
-
-        self.generation += 1;
-    }
-
-    pub fn retain_living(&mut self, allocator: &Allocator<A>) {
-        self.edges.retain(|edge, _| edge.is_alive(allocator));
-        self.generation = allocator.generation();
-    }
-
-    pub fn validate<'a>(&'a mut self, allocator: &'a Allocator<A>) -> Valid<&'a Self> {
-        if !self.is_synchronized(allocator) {
-            self.retain_living(allocator);
+impl<ARENA: Arena<Allocator = DynamicAllocator<ARENA>>, W> Graph<ARENA, W> {
+    pub fn kill(&mut self, allocator: &Allocator<ARENA>) {
+        if let Some(killed) = allocator.last_killed() {
+            self.edges.retain(|edge, _| !edge.contains(killed));
+            self.generation.increment();
         }
+    }
+
+    pub fn validate<'a>(&'a mut self, allocator: &'a Allocator<ARENA>) -> Valid<&'a Self> {
+        self.synchronize(allocator);
 
         Valid::new(self)
     }
 
-    pub fn validate_mut<'a>(&'a mut self, allocator: &'a Allocator<A>) -> Valid<&'a mut Self> {
-        if !self.is_synchronized(allocator) {
-            self.retain_living(allocator);
-        }
+    pub fn validate_mut<'a>(&'a mut self, allocator: &'a Allocator<ARENA>) -> Valid<&'a mut Self> {
+        self.synchronize(allocator);
 
         Valid::new(self)
     }
 
-    pub fn try_validate<'a>(&'a self, allocator: &'a Allocator<A>) -> Option<Valid<&'a Self>> {
-        if self.is_synchronized(allocator) {
-            Some(Valid::new(self))
-        } else {
-            None
+    fn synchronize(&mut self, allocator: &Allocator<ARENA>) {
+        match allocator.generation_cmp(self.generation) {
+            GenerationCmp::Valid => {}
+            GenerationCmp::OffByOne(killed) => {
+                self.edges.retain(|edge, _| !edge.contains(killed));
+                self.generation = allocator.generation();
+            }
+            GenerationCmp::Outdated => {
+                self.edges.retain(|edge, _| !edge.is_alive(allocator));
+                self.generation = allocator.generation();
+            }
         }
-    }
-
-    fn is_synchronized(&self, allocator: &Allocator<A>) -> bool {
-        self.generation == allocator.generation()
     }
 }
 
 impl<'a, A, W> Valid<'_, &'a Graph<A, W>> {
-    pub fn iter(&self) -> impl Iterator<Item = (Valid<&'a Edge<A>>, &W)> {
+    pub fn iter(&'a self) -> impl Iterator<Item = (Valid<'a, &'a Edge<A>>, &W)> {
         self.value.edges.iter().map(|(e, w)| (Valid::new(e), w))
     }
 }
 
 impl<'a, A, W> Valid<'_, &'a mut Graph<A, W>> {
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (Valid<&Edge<A>>, &mut W)> {
+    pub fn iter_mut(&'a mut self) -> impl Iterator<Item = (Valid<'a, &'a Edge<A>>, &mut W)> {
         self.value.edges.iter_mut().map(|(e, w)| (Valid::new(e), w))
     }
 }

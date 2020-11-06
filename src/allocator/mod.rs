@@ -1,8 +1,10 @@
 use crate::*;
+pub use alloc_gen::{AllocGen, GenerationCmp};
 pub use dynamic::DynamicAllocator;
 pub use fixed::FixedAllocator;
 use std::ops::{Deref, DerefMut};
 
+mod alloc_gen;
 mod dynamic;
 mod fixed;
 

@@ -1,3 +1,4 @@
+use crate::allocator::alloc_gen::GenerationCmp;
 use crate::*;
 use bit_vec::BitVec;
 use std::iter::Zip;
@@ -5,24 +6,26 @@ use std::marker::PhantomData;
 
 // #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
-pub struct DynamicAllocator<ID> {
-    current_gen: Vec<Id<ID>>,
+pub struct DynamicAllocator<ARENA> {
+    current_gen: Vec<Id<ARENA>>,
     dead: Vec<u32>,
     living: BitVec,
-    generation: u64,
+    generation: AllocGen<ARENA>,
+    last_killed: Option<Id<ARENA>>,
 }
 
-impl<ID> DynamicAllocator<ID> {
+impl<ARENA> DynamicAllocator<ARENA> {
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             current_gen: Vec::with_capacity(capacity),
             dead: Vec::default(),
             living: BitVec::with_capacity(capacity),
-            generation: 0,
+            generation: AllocGen::default(),
+            last_killed: None,
         }
     }
 
-    pub fn validate(&self, id: Id<ID>) -> Option<Valid<Id<ID>>> {
+    pub fn validate(&self, id: Id<ARENA>) -> Option<Valid<Id<ARENA>>> {
         if self.is_alive(id) {
             Some(Valid::new(id))
         } else {
@@ -30,24 +33,25 @@ impl<ID> DynamicAllocator<ID> {
         }
     }
 
-    pub fn generation(&self) -> u64 {
+    pub fn generation(&self) -> AllocGen<ARENA> {
         self.generation
     }
 }
 
-impl<ID> Default for DynamicAllocator<ID> {
+impl<ARENA> Default for DynamicAllocator<ARENA> {
     fn default() -> Self {
         Self {
             current_gen: vec![],
             dead: vec![],
             living: Default::default(),
-            generation: 0,
+            generation: Default::default(),
+            last_killed: None,
         }
     }
 }
 
-impl<ID> DynamicAllocator<ID> {
-    pub fn create(&mut self) -> Valid<Id<ID>> {
+impl<ARENA> DynamicAllocator<ARENA> {
+    pub fn create(&mut self) -> Valid<Id<ARENA>> {
         let id = if let Some(index) = self.dead.pop() {
             self.reuse_index(index)
         } else {
@@ -57,7 +61,7 @@ impl<ID> DynamicAllocator<ID> {
         Valid::new(id)
     }
 
-    fn reuse_index(&mut self, index: u32) -> Id<ID> {
+    fn reuse_index(&mut self, index: u32) -> Id<ARENA> {
         let i = index as usize;
 
         self.living.set(i, true);
@@ -65,7 +69,7 @@ impl<ID> DynamicAllocator<ID> {
         self.current_gen[i]
     }
 
-    fn create_new(&mut self) -> Id<ID> {
+    fn create_new(&mut self) -> Id<ARENA> {
         let index = self.current_gen.len() as u32;
 
         let id = Id::first(index);
@@ -76,7 +80,7 @@ impl<ID> DynamicAllocator<ID> {
         id
     }
 
-    pub fn kill(&mut self, id: Id<ID>) -> bool {
+    pub fn kill(&mut self, id: Id<ARENA>) -> bool {
         if self.is_alive(id) {
             self.kill_unchecked(id);
             true
@@ -85,7 +89,7 @@ impl<ID> DynamicAllocator<ID> {
         }
     }
 
-    fn kill_unchecked(&mut self, id: Id<ID>) {
+    fn kill_unchecked(&mut self, id: Id<ARENA>) {
         let index = id.get_u32();
         let i = index as usize;
 
@@ -95,10 +99,11 @@ impl<ID> DynamicAllocator<ID> {
 
         self.dead.push(index);
         self.living.set(i, false);
-        self.generation += 1;
+        self.generation.increment();
+        self.last_killed = Some(id);
     }
 
-    pub fn is_alive(&self, id: Id<ID>) -> bool {
+    pub fn is_alive(&self, id: Id<ARENA>) -> bool {
         if let Some(current_id) = self.current_gen.get(id.get_index()) {
             id.eq(&current_id)
         } else {
@@ -106,12 +111,25 @@ impl<ID> DynamicAllocator<ID> {
         }
     }
 
-    pub fn living(&self) -> Living<ID> {
+    pub fn last_killed(&self) -> Option<Id<ARENA>> {
+        self.last_killed
+    }
+
+    pub fn living(&self) -> Living<ARENA> {
         Living::new(self)
     }
 
-    pub fn ids(&self) -> Ids<ID> {
+    pub fn ids(&self) -> Ids<ARENA> {
         Ids::new(self)
+    }
+
+    pub fn generation_cmp(&self, gen: AllocGen<ARENA>) -> GenerationCmp<ARENA> {
+        match self.generation - gen {
+            0 => GenerationCmp::Valid,
+            // UNWRAP: an Id must have been killed for there to be a difference in generation
+            1 => GenerationCmp::OffByOne(self.last_killed.unwrap()),
+            _ => GenerationCmp::Outdated,
+        }
     }
 }
 

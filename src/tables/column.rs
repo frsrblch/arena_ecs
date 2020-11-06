@@ -1,6 +1,5 @@
+use crate::*;
 use std::marker::PhantomData;
-
-use crate::Index;
 use typed_iter::{Iter, IterMut, TypedIterator};
 
 #[derive(Debug)]
@@ -11,10 +10,7 @@ pub struct Column<C, T> {
 
 impl<C, T> Default for Column<C, T> {
     fn default() -> Self {
-        Self {
-            values: Vec::default(),
-            marker: PhantomData,
-        }
+        Self::with_capacity(0)
     }
 }
 
@@ -32,15 +28,15 @@ impl<C, T> Column<C, T> {
         Index::new(index)
     }
 
-    pub fn swap_remove(&mut self, index: Index<C>) -> T {
+    pub fn swap_remove(&mut self, index: &Index<C>) -> T {
         self.values.swap_remove(index.index())
     }
 
-    pub fn get(&self, index: Index<C>) -> Option<&T> {
+    pub fn get(&self, index: &Index<C>) -> Option<&T> {
         self.values.get(index.index())
     }
 
-    pub fn get_mut(&mut self, index: Index<C>) -> Option<&mut T> {
+    pub fn get_mut(&mut self, index: &Index<C>) -> Option<&mut T> {
         self.values.get_mut(index.index())
     }
 
@@ -62,6 +58,15 @@ impl<C, T> Column<C, T> {
 
     pub fn indices(&self) -> Indices<C> {
         Indices::new(self.len())
+    }
+}
+
+impl<'a, C, ID> Valid<'a, &Column<C, Id<ID>>>
+where
+    ID: Arena<Allocator = DynamicAllocator<ID>>,
+{
+    pub fn iter(&'a self) -> Valid<'a, Iter<C, Id<ID>>> {
+        Valid::new(self.value.iter())
     }
 }
 

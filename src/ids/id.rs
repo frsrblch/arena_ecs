@@ -100,22 +100,28 @@ impl<A> Id<A> {
 const TWO_POW_24: u32 = 16_777_216;
 
 impl<A: Arena<Allocator = FixedAllocator<A>>> ValidId<A> for Id<A> {
-    fn index(&self) -> usize {
+    fn index(self) -> usize {
         self.get_index()
     }
 
-    fn id(&self) -> Id<A> {
-        *self
+    fn id(self) -> Id<A> {
+        self
     }
 }
 
 impl<A: Arena<Allocator = FixedAllocator<A>>> ValidId<A> for &Id<A> {
-    fn index(&self) -> usize {
+    fn index(self) -> usize {
         self.get_index()
     }
 
-    fn id(&self) -> Id<A> {
-        **self
+    fn id(self) -> Id<A> {
+        *self
+    }
+}
+
+impl<A: Arena<Allocator = DynamicAllocator<A>>> Id<A> {
+    pub fn is_alive(&self, allocator: &Allocator<A>) -> bool {
+        allocator.is_alive(*self)
     }
 }
 

@@ -1,9 +1,11 @@
-pub use column::*;
-pub use id_indices::*;
-pub use index::*;
+pub use column::{Column, Indices};
+pub use id_column::IdColumn;
+pub use id_indices::IdIndices;
+pub use index::Index;
 pub use macros::*;
 
-mod column;
-mod id_indices;
-mod index;
-mod macros;
+pub mod column;
+pub mod id_column;
+pub mod id_indices;
+pub mod index;
+pub mod macros;

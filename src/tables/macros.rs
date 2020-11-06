@@ -11,9 +11,12 @@ macro_rules! table_array {
                 $(
                     $field:ident: struct $variant:ident {
                         type Row = struct $v_row:ident;
-                        $(
-                            $v_field:ident: $v_t:ty,
-                        )*
+                        fields {
+                            $( $v_field:ident: $v_t:ty, )*
+                        }
+                        links {
+                            $( $v_link:ident: $v_a:ty, )*
+                        }
                     },
                 )*
             }
@@ -25,25 +28,21 @@ macro_rules! table_array {
         #[derive(Debug, Default)]
         pub struct $table {
             indices: $crate::IdIndices<$arena, $index_enum>,
-            $(
-                pub $field: $variant,
-            )*
-            $(
-                $t_field: $t_variant,
-            )*
+            $( pub $field: $variant, )*
+            $( $t_field: $t_variant, )*
         }
 
         #[allow(dead_code)]
         impl $table {
-            pub fn insert_row<I: $crate::ValidId<$arena>, R: Into<$row_enum>>(
+            pub fn insert<I: $crate::ValidId<$arena>, R: Into<$row_enum>>(
                 &mut self,
                 id: I,
                 row: R,
             ) {
-                self.insert_row_inner(id, row.into());
+                self.insert_inner(id, row.into());
             }
 
-            fn insert_row_inner<I: $crate::ValidId<$arena>>(&mut self, id: I, row: $row_enum) {
+            fn insert_inner<I: $crate::ValidId<$arena>>(&mut self, id: I, row: $row_enum) {
                 self.remove(id);
                 let indices = &mut self.indices;
                 match row {
@@ -54,18 +53,15 @@ macro_rules! table_array {
             }
 
             pub fn remove<I: $crate::ValidId<$arena>>(&mut self, id: I) -> Option<$row_enum> {
-                self.indices
-                    .remove(id)
-                    .map(|index| self.remove_index(index))
-            }
+                let index = self.indices.remove(id)?;
 
-            fn remove_index(&mut self, index: $index_enum) -> $row_enum {
-                let indices = &mut self.indices;
-                match index {
+                let row = match index {
                     $(
-                        $index_enum::$variant(index) => self.$field.swap_remove(index, indices).into(),
+                        $index_enum::$variant(index) => self.$field.swap_remove(index, &mut self.indices).into(),
                     )*
-                }
+                };
+
+                Some(row)
             }
         }
 
@@ -78,9 +74,12 @@ macro_rules! table_array {
                     type Arena = $arena;
                     type Row = struct $v_row;
                     type Index = $index_enum;
-                    $(
-                        $v_field: $v_t,
-                    )*
+                    fields {
+                        $( $v_field: $v_t, )*
+                    }
+                    links {
+                        $( $v_link: $v_a, )*
+                    }
                 }
             }
         )*
@@ -94,7 +93,7 @@ macro_rules! index_enum {
             $( $variant:ident, )*
         }
     ) => {
-        #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+        #[derive(Debug, Eq, PartialEq, Hash)]
         pub enum $name {
             $(
                 $variant($crate::Index<$variant>),
@@ -142,7 +141,12 @@ macro_rules! table {
             type Arena = $arena:ident;
             type Row = struct $row:ident;
             type Index = $state_index:ident;
-            $( $field:ident: $t:ty, )* $(,)?
+            fields {
+                $( $field:ident: $t:ty, )* $(,)?
+            }
+            links {
+                $( $link:ident: $a:ty, )* $(,)?
+            }
         }
     ) => {
         #[derive(Debug)]
@@ -150,6 +154,9 @@ macro_rules! table {
             pub id: $crate::Column<Self, $crate::Id<$arena>>,
             $(
                 pub $field: $crate::Column<Self, $t>,
+            )*
+            $(
+                pub $link: $crate::IdColumn<Self, $a>,
             )*
         }
 
@@ -160,47 +167,55 @@ macro_rules! table {
                     $(
                         $field: Default::default(),
                     )*
+                    $(
+                        $link: Default::default(),
+                    )*
                 }
             }
         }
 
         #[allow(dead_code)]
         impl $table {
-            pub fn insert<I: $crate::ValidId<$arena>>(
+            fn insert<I: $crate::ValidId<$arena>>(
                 &mut self,
                 id: I,
                 row: $row,
                 indices: &mut $crate::IdIndices<$arena, $state_index>
-            ) -> $crate::Index<Self> {
+            ) {
                 let index = self.insert_inner(row);
                 indices.insert(id, index);
-                index
             }
 
             fn insert_inner(&mut self, row: $row) -> $crate::Index<Self> {
                 $(
                     self.$field.push(row.$field);
                 )*
+                $(
+                    self.$link.push_unvalidated(row.$link);
+                )*
                 self.id.push(row.id)
             }
 
-            pub fn swap_remove(
+            fn swap_remove(
                 &mut self,
                 index: $crate::Index<Self>,
                 indices: &mut $crate::IdIndices<$arena, $state_index>
             ) -> $row {
-                let row = self.swap_remove_inner(index);
-                if let Some(swapped) = self.id.get(index).map($crate::Valid::assert) {
+                let row = self.swap_remove_inner(&index);
+                if let Some(swapped) = self.id.get(&index).map($crate::Valid::assert) {
                     indices.insert(swapped, index);
                 }
                 row
             }
 
-            fn swap_remove_inner(&mut self, index: $crate::Index<Self>) -> $row {
+            fn swap_remove_inner(&mut self, index: &$crate::Index<Self>) -> $row {
                 $row {
                     id: self.id.swap_remove(index),
                     $(
                         $field: self.$field.swap_remove(index),
+                    )*
+                    $(
+                        $link: self.$link.swap_remove(index),
                     )*
                 }
             }
@@ -220,18 +235,22 @@ macro_rules! table {
             $(
                 pub $field: $t,
             )*
+            $(
+                pub $link: Option<$crate::Id<$a>>,
+            )*
         }
     }
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 mod tests {
     use crate::*;
 
     #[derive(Debug)]
     pub struct Colony;
 
-    fixed_arena!(Colony);
+    dynamic_arena!(Colony);
 
     #[derive(Debug)]
     pub struct Freighter;
@@ -249,13 +268,22 @@ mod tests {
             tables {
                 idle: struct Idle {
                     type Row = struct IdleRow;
-                    location: Id<Colony>,
-                    arrival: Time,
+                    fields {
+                        arrival: Time,
+                    }
+                    links {
+                        location: Colony,
+                    }
                 },
                 moving: struct Moving {
                     type Row = struct MovingRow;
-                    from: Id<Colony>,
-                    to: Id<Colony>,
+                    fields {
+
+                    }
+                    links {
+                        from: Colony,
+                        to: Colony,
+                    }
                 },
             }
             transitions {}
@@ -268,17 +296,87 @@ mod tests {
         let mut colonies = Allocator::<Colony>::default();
         let mut s = FreighterState::default();
 
-        let c = colonies.create();
+        let c = colonies.create().id();
         let id = a.create();
-        s.insert_row(
+        s.insert(
             id,
             IdleRow {
                 id: id.id(),
-                location: c,
                 arrival: Time(0.0),
+                location: Some(c),
             },
         );
 
         // panic!("{:#?}", s);
     }
+
+    #[derive(Debug, Default)]
+    pub struct ArenaA;
+    dynamic_arena!(ArenaA);
+
+    #[derive(Debug, Default)]
+    pub struct ArenaB;
+    dynamic_arena!(ArenaB);
+
+    #[derive(Debug, Default)]
+    pub struct ArenaC;
+    dynamic_arena!(ArenaC);
+
+    #[derive(Debug, Default)]
+    pub struct TableC {
+        pub ids: IdColumn<Self, ArenaC>,
+        pub value: Column<Self, u32>,
+        pub id_a: IdColumn<Self, ArenaA>,
+        pub id_b: IdColumn<Self, ArenaB>,
+    }
+
+    impl TableC {
+        pub fn push<A: ValidId<ArenaA>, B: ValidId<ArenaB>, ID: ValidId<ArenaC>>(
+            &mut self,
+            row: RowC<ID, A, B>,
+        ) -> Index<Self> {
+            self.value.push(row.value);
+            self.id_a.push(row.id_a);
+            self.id_b.push(row.id_b);
+            self.ids.push(row.id)
+        }
+
+        fn swap_remove<'a>(
+            &mut self,
+            index: &Index<Self>,
+            allocator_a: &'a Allocator<ArenaA>,
+            allocator_b: &'a Allocator<ArenaB>,
+        ) -> Option<RowC<Valid<'a, Id<ArenaC>>, Valid<'a, Id<ArenaA>>, Valid<'a, Id<ArenaB>>>>
+        {
+            let id = Valid::assert(self.ids.swap_remove(index).unwrap());
+            let value = self.value.swap_remove(index);
+
+            let id_a = self
+                .id_a
+                .swap_remove(index)
+                .and_then(|id| allocator_a.validate(id));
+
+            let id_b = self
+                .id_b
+                .swap_remove(index)
+                .and_then(|id| allocator_b.validate(id));
+
+            Some(RowC {
+                id,
+                value,
+                id_a: id_a?,
+                id_b: id_b?,
+            })
+        }
+    }
+
+    pub struct RowC<ID, A, B> {
+        id: ID,
+        value: u32,
+        id_a: A,
+        id_b: B,
+    }
+
+    #[test]
+    fn abc() {}
 }

@@ -4,14 +4,14 @@ use std::marker::PhantomData;
 #[derive(Debug)]
 pub struct IdLink<A, B> {
     component: Component<A, Option<Id<B>>>,
-    generation: u64,
+    generation: AllocGen<B>,
 }
 
 impl<A, B> Default for IdLink<A, B> {
     fn default() -> Self {
         Self {
             component: Default::default(),
-            generation: 0,
+            generation: AllocGen::default(),
         }
     }
 }
@@ -29,11 +29,16 @@ impl<A, B> IdLink<A, B> {
         self.component.insert(id, link.map(|link| link.id()));
     }
 
-    pub fn insert_unvalidated<I: ValidId<A>>(&mut self, id: I, link: Option<Id<B>>) {
+    pub fn insert_unvalidated<I: ValidId<A>>(
+        &mut self,
+        id: I,
+        link: Option<Id<B>>,
+        gen: AllocGen<B>,
+    ) {
         self.component.insert(id, link);
 
         if link.is_some() {
-            self.generation = 0;
+            self.generation = self.generation.min(gen);
         }
     }
 
@@ -50,7 +55,7 @@ impl<A, B: Arena<Allocator = DynamicAllocator<B>>> IdLink<A, B> {
             }
         }
 
-        self.generation += 1;
+        self.generation.increment();
     }
 
     pub fn validate<'a>(&'a mut self, alloc: &'a Allocator<B>) -> Valid<'a, &Self> {
@@ -69,28 +74,36 @@ impl<A, B: Arena<Allocator = DynamicAllocator<B>>> IdLink<A, B> {
         Valid::new(self)
     }
 
-    pub fn try_validate<'a>(&'a self, alloc: &'a Allocator<B>) -> Option<Valid<'a, &Self>> {
-        if self.is_synchronized(alloc) {
-            Some(Valid::new(self))
-        } else {
-            None
-        }
-    }
-
     fn is_synchronized(&self, alloc: &Allocator<B>) -> bool {
         self.generation == alloc.generation()
     }
 
-    fn retain_living(&mut self, alloc: &Allocator<B>) {
-        for link in self.component.iter_mut() {
-            if let Some(id) = link {
-                if !alloc.is_alive(*id) {
-                    *link = None;
+    fn retain_living(&mut self, allocator: &Allocator<B>) {
+        match allocator.generation_cmp(self.generation) {
+            GenerationCmp::Valid => {}
+            GenerationCmp::OffByOne(killed) => {
+                for opt_id in self.component.iter_mut() {
+                    *opt_id = if Some(killed) == *opt_id {
+                        None
+                    } else {
+                        *opt_id
+                    };
                 }
+
+                self.generation = allocator.generation();
+            }
+            GenerationCmp::Outdated => {
+                for opt_id in self.component.iter_mut() {
+                    if let Some(id) = opt_id {
+                        if !id.is_alive(allocator) {
+                            *opt_id = None;
+                        }
+                    }
+                }
+
+                self.generation = allocator.generation();
             }
         }
-
-        self.generation = alloc.generation();
     }
 }
 
