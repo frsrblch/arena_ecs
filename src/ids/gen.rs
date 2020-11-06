@@ -1,25 +1,21 @@
-use std::num::NonZeroU8;
+use std::num::NonZeroU32;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub(crate) struct Gen(NonZeroU8);
+pub(crate) struct Gen(NonZeroU32);
 
 impl Default for Gen {
     fn default() -> Self {
-        Self::first()
+        Self::new(1).unwrap()
     }
 }
 
 impl Gen {
-    pub(crate) fn first() -> Self {
-        Self(NonZeroU8::new(1).unwrap())
+    pub fn new(gen: u32) -> Option<Self> {
+        NonZeroU32::new(gen).map(Self)
     }
 
-    pub fn as_u32(&self) -> u32 {
-        self.0.get() as u32
-    }
-
-    #[cfg(test)]
-    pub(crate) fn from_u8(value: u8) -> Option<Self> {
-        NonZeroU8::new(value).map(Gen)
+    pub fn next(&self) -> Self {
+        let gen = self.0.get().wrapping_add(1);
+        Self::new(gen).unwrap_or_default()
     }
 }

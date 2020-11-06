@@ -2,64 +2,40 @@ use super::*;
 use crate::ids::gen::Gen;
 use std::cmp::Ordering;
 use std::marker::PhantomData;
-use std::num::NonZeroU32;
 
-/// A 4-byte generational index that stores the generation in the first byte, and the index in the last 3 bytes.
-/// Stores the generation in the first 8 bits, and the index in the last 24 bits.
-/// The generation is a NonZeroU8, so the bits are always a valid NonZeroU32.
 // #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct Id<A> {
-    bits: NonZeroU32,
+    pub(crate) index: u32,
+    gen: Gen,
     marker: PhantomData<A>,
 }
 
 impl<A> Id<A> {
     pub(crate) fn new(index: u32, gen: Gen) -> Self {
-        debug_assert!(index < TWO_POW_24);
-        let bits = index << 8 | gen.as_u32();
-        // SAFETY: Gen(NonZeroU8) is used in the first byte, therefore any u32 | Gen will return a non-zero u32
-        let bits = unsafe { NonZeroU32::new_unchecked(bits) };
-        Self::from_non_zero_u32(bits)
-    }
-
-    fn from_non_zero_u32(bits: NonZeroU32) -> Self {
         Self {
-            bits,
+            index,
+            gen,
             marker: PhantomData,
         }
     }
 
     pub(crate) fn get_index(&self) -> usize {
-        self.get_u32() as usize
+        self.index as usize
     }
 
-    pub(crate) fn get_u32(&self) -> u32 {
-        self.bits.get() >> 8
+    pub(crate) fn increment(&mut self) {
+        *self = self.next_gen();
     }
 
     pub(crate) fn next_gen(&self) -> Self {
-        const GEN_MASK: u32 = 0b_00000000_00000000_00000000_11111111;
-        const INDEX_MASK: u32 = !GEN_MASK;
-
-        let gen = self.bits.get() & GEN_MASK;
-        let index = self.bits.get() & INDEX_MASK;
-
-        // gen cannot overflow 8 bits (255) and cannot be zero
-        let gen = match gen {
-            255 => 1,
-            gen => gen + 1,
-        };
-
-        // SAFETY: gen is always greater than zero, so index | gen is always greater than zero
-        let bits = unsafe { NonZeroU32::new_unchecked(index | gen) };
-        Self::from_non_zero_u32(bits)
+        Self::new(self.index, self.gen.next())
     }
 }
 
 impl<A> Clone for Id<A> {
     fn clone(&self) -> Self {
-        Self::from_non_zero_u32(self.bits)
+        Self::new(self.index, self.gen)
     }
 }
 
@@ -67,7 +43,7 @@ impl<A> Copy for Id<A> {}
 
 impl<A> PartialEq for Id<A> {
     fn eq(&self, other: &Self) -> bool {
-        self.bits == other.bits
+        self.index.eq(&other.index) && self.gen.eq(&other.gen)
     }
 }
 
@@ -81,13 +57,16 @@ impl<A> PartialOrd for Id<A> {
 
 impl<A> Ord for Id<A> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.bits.cmp(&other.bits)
+        self.index
+            .cmp(&other.index)
+            .then_with(|| self.gen.cmp(&other.gen))
     }
 }
 
 impl<A> Hash for Id<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.bits.hash(state)
+        self.index.hash(state);
+        self.gen.hash(state);
     }
 }
 
@@ -96,8 +75,6 @@ impl<A> Id<A> {
         Self::new(index, Gen::default())
     }
 }
-
-const TWO_POW_24: u32 = 16_777_216;
 
 impl<A: Arena<Allocator = FixedAllocator<A>>> ValidId<A> for Id<A> {
     fn index(self) -> usize {
@@ -133,49 +110,9 @@ mod tests {
 
     #[test]
     fn id_size() {
-        assert_eq!(4, size_of::<Id<FixedArena>>());
-        assert_eq!(4, size_of::<Id<GenerationalArena>>());
-        assert_eq!(4, size_of::<Option<Id<FixedArena>>>());
-        assert_eq!(4, size_of::<Option<Id<GenerationalArena>>>());
-    }
-
-    #[test]
-    fn as_wrapping() {
-        let n = 257u32;
-        assert_eq!(1, n as u8);
-    }
-
-    #[derive(Debug, Default)]
-    struct TestArena;
-
-    fixed_arena!(TestArena);
-
-    #[test]
-    fn bit_layout_test() {
-        let index = 0b_00000000_00000000_00000000_00001111_u32;
-
-        let gen = Gen::from_u8(0b_00000010_u8).unwrap();
-
-        let id = Id::<TestArena>::new(index, gen);
-
-        let expected = 0b_00000000_00000000_0001111_00000010_u32;
-
-        assert_eq!(expected, id.bits.get());
-    }
-
-    #[test]
-    fn get_next_gen() {
-        let id = Id::<TestArena>::new(314, Gen::from_u8(159).unwrap());
-        let next = Id::new(314, Gen::from_u8(160).unwrap());
-
-        assert_eq!(id.next_gen(), next);
-    }
-
-    #[test]
-    fn get_next_gen_wraps() {
-        let id = Id::<TestArena>::new(314, Gen::from_u8(255).unwrap());
-        let next = Id::new(314, Gen::default());
-
-        assert_eq!(id.next_gen(), next);
+        let id_size = size_of::<Id<FixedArena>>();
+        assert_eq!(id_size, size_of::<Id<GenerationalArena>>());
+        assert_eq!(id_size, size_of::<Option<Id<FixedArena>>>());
+        assert_eq!(id_size, size_of::<Option<Id<GenerationalArena>>>());
     }
 }
