@@ -111,7 +111,7 @@ fn get_component_values<A: Arena<Allocator = FixedAllocator<A>>>(len: usize) -> 
 
     for _ in 0..len {
         let id = alloc.create();
-        component.insert(id, <Id<A> as ValidId<A>>::index(&id) as f64);
+        component.insert(id, <Id<A> as ValidId<A>>::index(id) as f64);
     }
 
     component

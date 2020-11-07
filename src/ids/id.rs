@@ -1,27 +1,65 @@
 use super::*;
 use crate::ids::gen::Gen;
 use std::cmp::Ordering;
+use std::convert::TryFrom;
 use std::marker::PhantomData;
+use std::num::NonZeroU64;
+use std::ops::BitAnd;
 
 // #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
 pub struct Id<A> {
-    pub(crate) index: u32,
-    gen: Gen,
+    // TODO remove old fields for SIMD optimization
+    // index: u32,
+    // gen: Gen,
+    bits: NonZeroU64,
     marker: PhantomData<A>,
 }
 
 impl<A> Id<A> {
+    pub(crate) fn first(index: u32) -> Self {
+        Self::new(index, Gen::default())
+    }
+
     pub(crate) fn new(index: u32, gen: Gen) -> Self {
+        let index_bits: u64 = u64::from(index) << Gen::SIZE_IN_BITS;
+        let gen_bits: u64 = gen.get_bits();
+
+        let bits: u64 = index_bits + gen_bits;
+
+        // Gen is based on a non-zero integer, so bits will never be zero
+        let bits = NonZeroU64::new(bits).unwrap();
+
+        Self::from_bits(bits)
+    }
+
+    pub(crate) fn from_bits(bits: NonZeroU64) -> Self {
         Self {
-            index,
-            gen,
+            bits,
             marker: PhantomData,
         }
     }
 
     pub(crate) fn get_index(&self) -> usize {
-        self.index as usize
+        let index = self.get_index_u64();
+
+        usize::try_from(index).unwrap()
+    }
+
+    pub(crate) fn get_u32(&self) -> u32 {
+        let index = self.get_index_u64();
+
+        u32::try_from(index).unwrap()
+    }
+
+    fn get_index_u64(&self) -> u64 {
+        self.bits.get() >> Gen::SIZE_IN_BITS
+    }
+
+    pub(crate) fn get_gen(&self) -> Gen {
+        let gen = self.bits.get().bitand(Gen::MASK);
+
+        u32::try_from(gen).ok().and_then(Gen::new).unwrap()
     }
 
     pub(crate) fn increment(&mut self) {
@@ -29,13 +67,13 @@ impl<A> Id<A> {
     }
 
     pub(crate) fn next_gen(&self) -> Self {
-        Self::new(self.index, self.gen.next())
+        Self::new(self.get_u32(), self.get_gen().next())
     }
 }
 
 impl<A> Clone for Id<A> {
     fn clone(&self) -> Self {
-        Self::new(self.index, self.gen)
+        Self::from_bits(self.bits)
     }
 }
 
@@ -43,7 +81,7 @@ impl<A> Copy for Id<A> {}
 
 impl<A> PartialEq for Id<A> {
     fn eq(&self, other: &Self) -> bool {
-        self.index.eq(&other.index) && self.gen.eq(&other.gen)
+        self.bits.eq(&other.bits)
     }
 }
 
@@ -57,22 +95,13 @@ impl<A> PartialOrd for Id<A> {
 
 impl<A> Ord for Id<A> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.index
-            .cmp(&other.index)
-            .then_with(|| self.gen.cmp(&other.gen))
+        self.bits.cmp(&other.bits)
     }
 }
 
 impl<A> Hash for Id<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.index.hash(state);
-        self.gen.hash(state);
-    }
-}
-
-impl<A> Id<A> {
-    pub(crate) fn first(index: u32) -> Self {
-        Self::new(index, Gen::default())
+        self.bits.hash(state);
     }
 }
 

@@ -96,7 +96,7 @@ impl<ARENA> DynamicAllocator<ARENA> {
             current_id.increment();
         }
 
-        self.dead.push(id.index);
+        self.dead.push(id.get_u32());
         self.living.set(index, false);
         self.generation.increment();
         self.last_killed = Some(id);
