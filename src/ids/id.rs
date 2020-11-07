@@ -27,7 +27,7 @@ impl<A> Id<A> {
 
         let bits: u64 = index_bits + gen_bits;
 
-        // Gen is based on a non-zero integer, so bits will never be zero
+        // UNWRAP: Gen is based on a non-zero integer, so bits will never be zero
         let bits = NonZeroU64::new(bits).unwrap();
 
         Self::from_bits(bits)
@@ -40,23 +40,23 @@ impl<A> Id<A> {
         }
     }
 
-    pub(crate) fn get_index(&self) -> usize {
-        let index = self.get_index_u64();
+    pub(crate) fn index_usize(&self) -> usize {
+        let index = self.index_u64();
 
         usize::try_from(index).unwrap()
     }
 
-    pub(crate) fn get_u32(&self) -> u32 {
-        let index = self.get_index_u64();
+    pub(crate) fn index_u32(&self) -> u32 {
+        let index = self.index_u64();
 
         u32::try_from(index).unwrap()
     }
 
-    fn get_index_u64(&self) -> u64 {
+    fn index_u64(&self) -> u64 {
         self.bits.get() >> Gen::SIZE_IN_BITS
     }
 
-    pub(crate) fn get_gen(&self) -> Gen {
+    pub(crate) fn gen(&self) -> Gen {
         let gen = self.bits.get().bitand(Gen::MASK);
 
         u32::try_from(gen).ok().and_then(Gen::new).unwrap()
@@ -67,7 +67,7 @@ impl<A> Id<A> {
     }
 
     pub(crate) fn next_gen(&self) -> Self {
-        Self::new(self.get_u32(), self.get_gen().next())
+        Self::new(self.index_u32(), self.gen().next())
     }
 }
 
@@ -89,7 +89,7 @@ impl<A> Eq for Id<A> {}
 
 impl<A> PartialOrd for Id<A> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
+        self.bits.partial_cmp(&other.bits)
     }
 }
 
@@ -107,7 +107,7 @@ impl<A> Hash for Id<A> {
 
 impl<A: Arena<Allocator = FixedAllocator<A>>> ValidId<A> for Id<A> {
     fn index(self) -> usize {
-        self.get_index()
+        self.index_usize()
     }
 
     fn id(self) -> Id<A> {
@@ -117,7 +117,7 @@ impl<A: Arena<Allocator = FixedAllocator<A>>> ValidId<A> for Id<A> {
 
 impl<A: Arena<Allocator = FixedAllocator<A>>> ValidId<A> for &Id<A> {
     fn index(self) -> usize {
-        self.get_index()
+        self.index_usize()
     }
 
     fn id(self) -> Id<A> {

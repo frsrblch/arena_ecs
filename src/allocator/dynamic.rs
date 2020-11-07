@@ -90,21 +90,21 @@ impl<ARENA> DynamicAllocator<ARENA> {
     }
 
     fn kill_unchecked(&mut self, id: Id<ARENA>) {
-        let index = id.get_index();
+        let index = id.index_usize();
 
         if let Some(current_id) = self.current_gen.get_mut(index) {
             current_id.increment();
         }
 
-        self.dead.push(id.get_u32());
+        self.dead.push(id.index_u32());
         self.living.set(index, false);
         self.generation.increment();
         self.last_killed = Some(id);
     }
 
     pub fn is_alive(&self, id: Id<ARENA>) -> bool {
-        if let Some(current_id) = self.current_gen.get(id.get_index()) {
-            id.eq(&current_id)
+        if let Some(current) = self.current_gen.get(id.index_usize()) {
+            id.eq(current)
         } else {
             false
         }
