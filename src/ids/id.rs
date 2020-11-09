@@ -4,7 +4,6 @@ use std::cmp::Ordering;
 use std::convert::TryFrom;
 use std::marker::PhantomData;
 use std::num::NonZeroU64;
-use std::ops::BitAnd;
 
 // #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Debug)]
@@ -57,7 +56,7 @@ impl<A> Id<A> {
     }
 
     pub(crate) fn gen(&self) -> Gen {
-        let gen = self.bits.get().bitand(Gen::MASK);
+        let gen = self.bits.get() & Gen::MASK;
 
         u32::try_from(gen).ok().and_then(Gen::new).unwrap()
     }
