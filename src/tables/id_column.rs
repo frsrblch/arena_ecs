@@ -28,11 +28,6 @@ impl<C, ID> IdColumn<C, ID> {
         self.ids.push(Some(id.id()))
     }
 
-    pub fn push_unvalidated(&mut self, id: Option<Id<ID>>) -> Index<C> {
-        self.generation = AllocGen::default();
-        self.ids.push(id)
-    }
-
     pub fn swap_remove(&mut self, index: &Index<C>) -> Option<Id<ID>> {
         self.ids.swap_remove(index)
     }

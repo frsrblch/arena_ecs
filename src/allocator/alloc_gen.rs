@@ -26,10 +26,6 @@ impl<ARENA> AllocGen<ARENA> {
     pub(crate) fn increment(&mut self) {
         self.gen += 1;
     }
-
-    pub fn min(self, rhs: Self) -> Self {
-        Self::new(self.gen.min(rhs.gen))
-    }
 }
 
 impl<ARENA> std::ops::Sub for AllocGen<ARENA> {

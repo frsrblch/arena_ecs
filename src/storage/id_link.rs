@@ -29,19 +29,6 @@ impl<A, B> IdLink<A, B> {
         self.component.insert(id, link.map(|link| link.id()));
     }
 
-    pub fn insert_unvalidated<I: ValidId<A>>(
-        &mut self,
-        id: I,
-        link: Option<Id<B>>,
-        gen: AllocGen<B>,
-    ) {
-        self.component.insert(id, link);
-
-        if link.is_some() {
-            self.generation = self.generation.min(gen);
-        }
-    }
-
     pub fn remove<I: ValidId<A>>(&mut self, id: I) {
         *self.component.get_mut(id) = None;
     }

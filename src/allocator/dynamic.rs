@@ -123,11 +123,14 @@ impl<ARENA> DynamicAllocator<ARENA> {
     }
 
     pub fn generation_cmp(&self, gen: AllocGen<ARENA>) -> GenerationCmp<ARENA> {
-        match self.generation - gen {
-            0 => GenerationCmp::Valid,
-            // UNWRAP: an Id must have been killed for there to be a difference in generation
-            1 => GenerationCmp::OffByOne(self.last_killed.unwrap()),
-            _ => GenerationCmp::Outdated,
+        if let Some(killed) = self.last_killed {
+            match self.generation - gen {
+                0 => GenerationCmp::Valid,
+                1 => GenerationCmp::OffByOne(killed),
+                _ => GenerationCmp::Outdated,
+            }
+        } else {
+            GenerationCmp::Valid
         }
     }
 }

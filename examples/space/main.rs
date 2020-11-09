@@ -96,12 +96,12 @@ fn main() {
 
 #[test]
 fn id_sizes() {
-    assert_eq!(2, std::mem::size_of::<Id<System>>());
-    assert_eq!(4, std::mem::size_of::<Option<Id<System>>>());
+    assert_eq!(8, std::mem::size_of::<Id<System>>());
+    assert_eq!(8, std::mem::size_of::<Option<Id<System>>>());
 
-    assert_eq!(4, std::mem::size_of::<Id<Body>>());
+    assert_eq!(8, std::mem::size_of::<Id<Body>>());
     assert_eq!(8, std::mem::size_of::<Option<Id<Body>>>());
 
-    assert_eq!(4, std::mem::size_of::<Id<Colony>>());
-    assert_eq!(4, std::mem::size_of::<Option<Id<Colony>>>()); // generational indices get option for free
+    assert_eq!(8, std::mem::size_of::<Id<Colony>>());
+    assert_eq!(8, std::mem::size_of::<Option<Id<Colony>>>()); // generational indices get option for free
 }

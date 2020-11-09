@@ -33,12 +33,6 @@ impl<ID, T> IdMap<ID, T> {
         }
     }
 
-    /// Inserts a possibly-invalid Id and Value into the hashmap. Resets the IdMap's generation value.
-    pub fn insert_unvalidated(&mut self, id: Id<ID>, value: T) {
-        self.map.insert(id, value);
-        self.generation = AllocGen::default();
-    }
-
     /// Inserts a valid Id and Value into the hashmap. Does not reset the IdMap's generation value.
     pub fn insert<I: ValidId<ID>>(&mut self, id: I, value: T) {
         self.map.insert(id.id(), value);
@@ -97,37 +91,30 @@ impl<ID, T> IdMap<ID, T> {
 }
 
 impl<ID: Arena<Allocator = DynamicAllocator<ID>>, T> IdMap<ID, T> {
-    pub fn retain_living(&mut self, allocator: &Allocator<ID>) {
-        self.map.retain(|id, _| allocator.is_alive(*id));
-        self.generation = allocator.generation();
-    }
-
     pub fn validate<'a>(&'a mut self, allocator: &'a Allocator<ID>) -> Valid<&'a Self> {
-        if !self.is_synchronized(allocator) {
-            self.retain_living(allocator);
-        }
+        self.synchronize(allocator);
 
         Valid::new(self)
     }
 
     pub fn validate_mut<'a>(&'a mut self, allocator: &'a Allocator<ID>) -> Valid<&'a mut Self> {
-        if !self.is_synchronized(allocator) {
-            self.retain_living(allocator);
-        }
+        self.synchronize(allocator);
 
         Valid::new(self)
     }
 
-    pub fn try_validate<'a>(&'a self, allocator: &'a Allocator<ID>) -> Option<Valid<&'a Self>> {
-        if self.is_synchronized(allocator) {
-            Some(Valid::new(self))
-        } else {
-            None
+    fn synchronize(&mut self, allocator: &Allocator<ID>) {
+        match allocator.generation_cmp(self.generation) {
+            GenerationCmp::Valid => {}
+            GenerationCmp::OffByOne(killed) => {
+                self.remove(killed);
+                self.generation = allocator.generation();
+            }
+            GenerationCmp::Outdated => {
+                self.map.retain(|id, _| allocator.is_alive(*id));
+                self.generation = allocator.generation();
+            }
         }
-    }
-
-    fn is_synchronized(&self, allocator: &Allocator<ID>) -> bool {
-        self.generation == allocator.generation()
     }
 }
 
@@ -138,6 +125,10 @@ impl<'a, ID, T> Valid<'a, &'a IdMap<ID, T>> {
             .iter()
             .map(|(id, value)| (Valid::new(id), value))
     }
+
+    pub fn get(&self, id: Id<ID>) -> Option<&T> {
+        self.value.get_unchecked(id)
+    }
 }
 
 impl<'a, ID, T> Valid<'a, &mut IdMap<ID, T>> {
@@ -146,6 +137,10 @@ impl<'a, ID, T> Valid<'a, &mut IdMap<ID, T>> {
             .map
             .iter_mut()
             .map(|(id, value)| (Valid::new(id), value))
+    }
+
+    pub fn get_mut(&mut self, id: Id<ID>) -> Option<&mut T> {
+        self.value.get_unchecked_mut(id)
     }
 
     pub fn retain<F: FnMut(Valid<'a, Id<ID>>, &mut T) -> bool>(&mut self, mut f: F) {
@@ -163,23 +158,25 @@ mod tests {
 
     #[test]
     fn retain_valid() {
-        let mut alloc = Allocator::<Test>::default();
+        let alloc = &mut Allocator::<Test>::default();
         let mut map = IdMap::<Test, u32>::default();
 
-        let a = alloc.create().value;
-        let b = alloc.create().value;
-        let c = alloc.create().value;
+        let mut create = |value: u32| {
+            let id = alloc.create();
+            map.insert(id, value);
+            id.value
+        };
 
-        map.insert_unvalidated(a, 0);
-        map.insert_unvalidated(b, 1);
-        map.insert_unvalidated(c, 2);
+        let a = create(0);
+        let b = create(1);
+        let c = create(2);
 
         alloc.kill(b);
 
-        map.retain_living(&alloc);
+        let map = map.validate(alloc);
 
-        assert_eq!(Some(&0), map.get_unchecked(a));
-        assert_eq!(None, map.get_unchecked(b));
-        assert_eq!(Some(&2), map.get_unchecked(c));
+        assert_eq!(Some(&0), map.get(a));
+        assert_eq!(None, map.get(b));
+        assert_eq!(Some(&2), map.get(c));
     }
 }
