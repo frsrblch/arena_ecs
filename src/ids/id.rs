@@ -128,6 +128,10 @@ impl<A: Arena<Allocator = DynamicAllocator<A>>> Id<A> {
     pub fn is_alive(&self, allocator: &Allocator<A>) -> bool {
         allocator.is_alive(*self)
     }
+
+    pub fn validate<'a>(&self, allocator: &'a Allocator<A>) -> Option<Valid<'a, Id<A>>> {
+        allocator.validate(*self)
+    }
 }
 
 #[cfg(test)]
