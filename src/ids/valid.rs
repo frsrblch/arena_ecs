@@ -25,6 +25,12 @@ impl<'a, T> Valid<'a, T> {
     }
 }
 
+impl<'a, T: Copy> Valid<'a, &T> {
+    pub fn copied(&self) -> Valid<'a, T> {
+        Valid::new(*self.value)
+    }
+}
+
 impl<A> ValidId<A> for Valid<'_, Id<A>> {
     fn index(self) -> usize {
         self.value.index_usize()
