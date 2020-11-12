@@ -1,10 +1,11 @@
+use iter_context::ContextualIterator;
+
 use body::*;
 use colony::*;
 use gen_id::*;
 use government::*;
 use state::*;
 use system::*;
-use typed_iter::TypedIterator;
 
 pub mod body;
 pub mod colony;

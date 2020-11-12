@@ -1,6 +1,5 @@
-use crate::{Id, ValidId};
+use crate::{ContextualIterator, Id, ValidId};
 use std::marker::PhantomData;
-use typed_iter::TypedIterator;
 
 /// A wrapper that is used show that an Id or collection of Ids are valid for the specified lifetime.
 ///
@@ -51,7 +50,7 @@ impl<'a, A> ValidId<A> for Valid<'_, &'a Id<A>> {
     }
 }
 
-impl<'a, C, ID> IntoIterator for Valid<'a, typed_iter::Iter<'a, C, Id<ID>>> {
+impl<'a, C, ID> IntoIterator for Valid<'a, iter_context::Iter<'a, C, Id<ID>>> {
     type Item = Valid<'a, &'a Id<ID>>;
     type IntoIter = Iter<'a, Id<ID>>;
 
@@ -62,11 +61,11 @@ impl<'a, C, ID> IntoIterator for Valid<'a, typed_iter::Iter<'a, C, Id<ID>>> {
     }
 }
 
-impl<'a, C, ID> TypedIterator for Valid<'a, typed_iter::Iter<'a, C, Id<ID>>> {
+impl<'a, C, ID> ContextualIterator for Valid<'a, iter_context::Iter<'a, C, Id<ID>>> {
     type Context = C;
 }
 
-impl<'a, C, ID> IntoIterator for Valid<'a, typed_iter::Iter<'a, C, Option<Id<ID>>>> {
+impl<'a, C, ID> IntoIterator for Valid<'a, iter_context::Iter<'a, C, Option<Id<ID>>>> {
     type Item = Option<Valid<'a, &'a Id<ID>>>;
     type IntoIter = Iter<'a, Option<Id<ID>>>;
 
@@ -77,7 +76,7 @@ impl<'a, C, ID> IntoIterator for Valid<'a, typed_iter::Iter<'a, C, Option<Id<ID>
     }
 }
 
-impl<'a, C, ID> TypedIterator for Valid<'a, typed_iter::Iter<'a, C, Option<Id<ID>>>> {
+impl<'a, C, ID> ContextualIterator for Valid<'a, iter_context::Iter<'a, C, Option<Id<ID>>>> {
     type Context = C;
 }
 

@@ -136,23 +136,19 @@ impl<ARENA> DynamicAllocator<ARENA> {
 }
 
 impl<ID: Arena<Allocator = DynamicAllocator<ID>>> DynamicAllocator<ID> {
-    pub fn zip_id_and_filter<
-        'a,
-        I: TypedIterator<Context = ID> + IntoIterator<Item = T> + 'a,
-        T,
-    >(
-        &self,
-        iter: I,
-    ) -> impl Iterator<Item = (T, Valid<&Id<ID>>)> {
+    pub fn zip_id_and_filter<'a, I, T>(&self, iter: I) -> impl Iterator<Item = (T, Valid<&Id<ID>>)>
+    where
+        I: ContextualIterator<Context = ID> + IntoIterator<Item = T> + 'a,
+    {
         iter.zip(self.ids())
             .into_iter()
             .filter_map(|(t, id)| id.map(|id| (t, id)))
     }
 
-    pub fn filter_living<'a, I: TypedIterator<Context = ID> + IntoIterator<Item = T> + 'a, T>(
-        &'a self,
-        iter: I,
-    ) -> impl Iterator<Item = T> + 'a {
+    pub fn filter_living<'a, I, T>(&'a self, iter: I) -> impl Iterator<Item = T> + 'a
+    where
+        I: ContextualIterator<Context = ID> + IntoIterator<Item = T> + 'a,
+    {
         iter.zip(self.living())
             .into_iter()
             .filter_map(|(t, alive)| if alive { Some(t) } else { None })
@@ -182,7 +178,7 @@ impl<'a, ID> IntoIterator for Living<'a, ID> {
     }
 }
 
-impl<'a, ID> TypedIterator for Living<'a, ID> {
+impl<'a, ID> ContextualIterator for Living<'a, ID> {
     type Context = ID;
 }
 
@@ -213,7 +209,7 @@ impl<'a, ID> Iterator for Ids<'a, ID> {
     }
 }
 
-impl<'a, ID> TypedIterator for Ids<'a, ID> {
+impl<'a, ID> ContextualIterator for Ids<'a, ID> {
     type Context = ID;
 }
 

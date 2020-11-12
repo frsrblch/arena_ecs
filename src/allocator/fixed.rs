@@ -51,7 +51,7 @@ impl<ID> Iterator for Ids<'_, ID> {
     }
 }
 
-impl<ID> TypedIterator for Ids<'_, ID> {
+impl<ID> ContextualIterator for Ids<'_, ID> {
     type Context = ID;
 }
 

@@ -10,12 +10,11 @@ pub struct State {
 
 impl State {
     pub fn print_with_government(&self) {
-        let iter = self
-            .colony
-            .name
-            .iter()
-            .zip(self.colony.population.iter())
-            .zip(self.colony.government.iter());
+        let name = self.colony.name.iter();
+        let population = self.colony.population.iter();
+        let government = self.colony.government.iter();
+
+        let iter = name.zip(population).zip(government);
 
         self.colony
             .alloc

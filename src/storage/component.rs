@@ -138,11 +138,11 @@ impl<'a, ID, T> IntoIterator for &'a mut Component<ID, T> {
     }
 }
 
-impl<'a, ID, T> TypedIterator for &'a Component<ID, T> {
+impl<'a, ID, T> ContextualIterator for &'a Component<ID, T> {
     type Context = ID;
 }
 
-impl<'a, ID, T> TypedIterator for &'a mut Component<ID, T> {
+impl<'a, ID, T> ContextualIterator for &'a mut Component<ID, T> {
     type Context = ID;
 }
 

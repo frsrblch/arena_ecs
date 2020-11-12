@@ -129,6 +129,6 @@ impl<'a, A, B> IntoIterator for &'a Valid<'a, &IdLink<A, B>> {
     }
 }
 
-impl<'a, A, B> TypedIterator for &'a Valid<'a, &'a IdLink<A, B>> {
+impl<'a, A, B> ContextualIterator for &'a Valid<'a, &'a IdLink<A, B>> {
     type Context = A;
 }

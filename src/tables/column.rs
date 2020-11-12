@@ -1,6 +1,6 @@
 use crate::*;
+use iter_context::{Iter, IterMut};
 use std::marker::PhantomData;
-use typed_iter::{Iter, IterMut, TypedIterator};
 
 #[derive(Debug)]
 pub struct Column<C, T> {
@@ -93,6 +93,6 @@ impl<'a, C> Iterator for Indices<'a, C> {
     }
 }
 
-impl<'a, C> TypedIterator for Indices<'a, C> {
+impl<'a, C> ContextualIterator for Indices<'a, C> {
     type Context = C;
 }
