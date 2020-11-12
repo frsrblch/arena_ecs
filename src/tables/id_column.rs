@@ -24,8 +24,8 @@ impl<C, ID> IdColumn<C, ID> {
         }
     }
 
-    pub fn push<I: ValidId<ID>>(&mut self, id: I) -> Index<C> {
-        self.ids.push(Some(id.id()))
+    pub fn push<I: ValidId<ID>>(&mut self, id: Option<I>) -> Index<C> {
+        self.ids.push(id.map(|id| id.id()))
     }
 
     pub fn swap_remove(&mut self, index: &Index<C>) -> Option<Id<ID>> {
