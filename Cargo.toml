@@ -9,6 +9,7 @@ edition = "2018"
 bit-vec = { version = "0.6" }
 fnv = "1.0"
 iter_context = { git = "https://github.com/frsrblch/iter_context" }
+paste = "1.0.3"
 
 [dependencies.rayon]
 version = "1.3"
