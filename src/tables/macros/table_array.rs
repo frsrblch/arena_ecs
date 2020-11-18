@@ -20,16 +20,16 @@ macro_rules! table_array {
                     },
                 )*
             }
-            transitions {
+            $( transitions {
                 $( $t_field:ident: $t_variant:ident, )*
-            }
+            } )?
         }
     ) => {
         #[derive(Debug, Default)]
         pub struct $table {
             indices: $crate::IdIndices<$arena, $index_enum>,
             $( pub $field: $variant, )*
-            $( $t_field: $t_variant, )*
+            $( $( $t_field: $t_variant, )* )?
         }
 
         #[allow(dead_code)]
@@ -46,10 +46,9 @@ macro_rules! table_array {
 
             fn insert_inner<I: $crate::ValidId<$arena>>(&mut self, id: I, row: $row_enum) {
                 self.remove(id);
-                let indices = &mut self.indices;
                 match row {
                     $(
-                        $row_enum::$variant(row) => self.$field.insert(Valid::assert(row), indices),
+                        $row_enum::$variant(row) => self.$field.insert(Valid::assert(row), &mut self.indices),
                     )*
                 };
             }
